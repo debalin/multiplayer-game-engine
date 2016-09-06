@@ -1,21 +1,29 @@
 package com.debalin.engine;
 
 import processing.core.*;
-import java.util.*;
+import com.debalin.util.*;
+
+import java.util.ArrayList;
 
 public class MainEngine extends PApplet {
 
-  public static final PVector RESOLUTION = new PVector(800, 800);
-  private static final int SMOOTH_FACTOR = 4;
-  private static final PVector BACKGROUND_RGB = new PVector(60, 60, 60);
+  public ArrayList<GameObject> gameObjects;
 
-  public static void main(String args[]) {
+  public MainEngine() {
+    gameObjects = new ArrayList<>();
+  }
+
+  public void registerGameObject(GameObject gameObject) {
+    this.gameObjects.add(gameObject);
+  }
+
+  public void start() {
     PApplet.main(new String[] { "com.debalin.engine.MainEngine" });
   }
 
   public void settings() {
-    size((int)RESOLUTION.x, (int)RESOLUTION.y, P2D);
-    smooth(SMOOTH_FACTOR);
+    size((int)Constants.RESOLUTION.x, (int)Constants.RESOLUTION.y, P2D);
+    smooth(Constants.SMOOTH_FACTOR);
   }
 
   public void setup() {
@@ -23,7 +31,7 @@ public class MainEngine extends PApplet {
   }
 
   public void draw() {
-    background(BACKGROUND_RGB.x, BACKGROUND_RGB.y, BACKGROUND_RGB.z);
+    background(Constants.BACKGROUND_RGB.x, Constants.BACKGROUND_RGB.y, Constants.BACKGROUND_RGB.z);
   }
 
 }
