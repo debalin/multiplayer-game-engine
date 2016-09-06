@@ -1,18 +1,18 @@
 package com.debalin;
 
 import com.debalin.characters.Player;
+import com.debalin.engine.Controller;
 import com.debalin.engine.MainEngine;
 import com.debalin.util.Constants;
 
-public class Controller {
+public class SimpleRaceManager extends Controller{
 
-  public MainEngine engine;
   public Player player;
 
   public static void main(String args[]) {
-    Controller controller = new Controller();
-    controller.registerConstants();
-    controller.startEngine();
+    SimpleRaceManager simpleRaceManager = new SimpleRaceManager();
+    simpleRaceManager.registerConstants();
+    simpleRaceManager.startEngine();
   }
 
   private void startEngine() {
@@ -27,8 +27,7 @@ public class Controller {
     MainEngine.registerGameObject(player);
   }
 
-  public void setEngine(MainEngine engine) {
-    this.engine = engine;
+  public void initialize() {
     initializePlayer();
     registerCharacters();
   }
