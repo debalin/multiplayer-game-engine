@@ -1,29 +1,42 @@
 package com.debalin.engine;
 
+import com.debalin.Controller;
 import processing.core.*;
-import com.debalin.util.*;
 
 import java.util.ArrayList;
 
 public class MainEngine extends PApplet {
 
-  public ArrayList<GameObject> gameObjects;
+  public static ArrayList<GameObject> gameObjects;
+  public static Controller controller;
 
-  public MainEngine() {
+  public static PVector resolution;
+  public static PVector backgroundRGB;
+  public static int smoothFactor;
+
+  static {
     gameObjects = new ArrayList<>();
   }
 
-  public void registerGameObject(GameObject gameObject) {
-    this.gameObjects.add(gameObject);
+  public static void registerGameObject(GameObject gameObject) {
+    gameObjects.add(gameObject);
   }
 
-  public void start() {
+  public static void registerConstants(PVector inputResolution, int inputSmoothFactor, PVector inputBackgroundRGB) {
+    resolution = inputResolution.copy();
+    smoothFactor = inputSmoothFactor;
+    backgroundRGB = inputBackgroundRGB.copy();
+  }
+
+  public static void startEngine(Controller inputController) {
+    controller = inputController;
     PApplet.main(new String[] { "com.debalin.engine.MainEngine" });
   }
 
   public void settings() {
-    size((int)Constants.RESOLUTION.x, (int)Constants.RESOLUTION.y, P2D);
-    smooth(Constants.SMOOTH_FACTOR);
+    size((int)resolution.x, (int)resolution.y, P2D);
+    smooth(smoothFactor);
+    controller.setEngine(this);
   }
 
   public void setup() {
@@ -31,7 +44,17 @@ public class MainEngine extends PApplet {
   }
 
   public void draw() {
-    background(Constants.BACKGROUND_RGB.x, Constants.BACKGROUND_RGB.y, Constants.BACKGROUND_RGB.z);
+    background(backgroundRGB.x, backgroundRGB.y, backgroundRGB.z);
+    updatePositions();
+    drawShapes();
+  }
+
+  public void updatePositions() {
+    gameObjects.forEach(GameObject::updatePosition);
+  }
+
+  public void drawShapes() {
+    gameObjects.forEach(GameObject::drawShape);
   }
 
 }
