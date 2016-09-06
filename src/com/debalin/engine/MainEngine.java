@@ -1,16 +1,16 @@
-package com.debalin;
+package com.debalin.engine;
 
 import processing.core.*;
 import java.util.*;
 
-public class Engine extends PApplet {
+public class MainEngine extends PApplet {
 
   public static final PVector RESOLUTION = new PVector(800, 800);
   private static final int SMOOTH_FACTOR = 4;
   private static final PVector BACKGROUND_RGB = new PVector(60, 60, 60);
 
   public static void main(String args[]) {
-    PApplet.main(new String[] { "com.debalin.Engine" });
+    PApplet.main(new String[] { "com.debalin.engine.MainEngine" });
   }
 
   public void settings() {
