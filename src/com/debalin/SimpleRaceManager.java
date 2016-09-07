@@ -11,11 +11,11 @@ public class SimpleRaceManager extends Controller{
 
   public static void main(String args[]) {
     SimpleRaceManager simpleRaceManager = new SimpleRaceManager();
-    simpleRaceManager.registerConstants();
     simpleRaceManager.startEngine();
   }
 
   private void startEngine() {
+    registerConstants();
     MainEngine.startEngine(this);
   }
 
@@ -24,12 +24,17 @@ public class SimpleRaceManager extends Controller{
   }
 
   private void registerCharacters() {
-    MainEngine.registerGameObject(player);
+    engine.registerGameObject(player);
   }
 
   public void initialize() {
     initializePlayer();
     registerCharacters();
+    registerKeypressUsers();
+  }
+
+  private void registerKeypressUsers() {
+    engine.registerKeypressUser(player);
   }
 
   private void initializePlayer() {

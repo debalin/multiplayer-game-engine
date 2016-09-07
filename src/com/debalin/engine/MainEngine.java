@@ -6,19 +6,25 @@ import java.util.ArrayList;
 
 public class MainEngine extends PApplet {
 
-  public static ArrayList<GameObject> gameObjects;
+  public ArrayList<GameObject> gameObjects;
+  public ArrayList<KeypressUser> keypressUsers;
   public static Controller controller;
 
   public static PVector resolution;
   public static PVector backgroundRGB;
   public static int smoothFactor;
 
-  static {
+  public MainEngine() {
     gameObjects = new ArrayList<>();
+    keypressUsers = new ArrayList<>();
   }
 
-  public static void registerGameObject(GameObject gameObject) {
+  public void registerGameObject(GameObject gameObject) {
     gameObjects.add(gameObject);
+  }
+
+  public void registerKeypressUser(KeypressUser keypressUser) {
+    keypressUsers.add(keypressUser);
   }
 
   public static void registerConstants(PVector inputResolution, int inputSmoothFactor, PVector inputBackgroundRGB) {
@@ -35,11 +41,10 @@ public class MainEngine extends PApplet {
   public void settings() {
     size((int)resolution.x, (int)resolution.y, P2D);
     smooth(smoothFactor);
-    controller.setEngine(this);
   }
 
   public void setup() {
-    noStroke();
+    controller.setEngine(this);
   }
 
   public void draw() {
@@ -54,6 +59,18 @@ public class MainEngine extends PApplet {
 
   public void drawShapes() {
     gameObjects.forEach(GameObject::drawShape);
+  }
+
+  public void keyPressed() {
+    for (KeypressUser keypressUser : keypressUsers) {
+      keypressUser.handleKeypress(key, true);
+    }
+  }
+
+  public void keyReleased() {
+    for (KeypressUser keypressUser : keypressUsers) {
+      keypressUser.handleKeypress(key, false);
+    }
   }
 
 }

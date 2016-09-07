@@ -8,9 +8,11 @@ public class Constants {
   public static final int SMOOTH_FACTOR = 4;
   public static final PVector BACKGROUND_RGB = new PVector(60, 60, 60);
 
-  public static final PVector PLAYER_COLOR = new PVector(123, 120, 45);
+  public static final PVector PLAYER_COLOR = new PVector(0, 204, 0);
   public static final PVector PLAYER_SIZE = new PVector(30, 30);
   public static final float PLAYER_START_X = 50;
   public static final PVector PLAYER_INIT_POS = new PVector(Constants.PLAYER_START_X, Constants.RESOLUTION.y - Constants.PLAYER_SIZE.y);
+  public static final PVector PLAYER_INIT_VEL = new PVector(0, 0);
+  public static final PVector PLAYER_MAX_VEL = new PVector(5, 5);
 
 }
