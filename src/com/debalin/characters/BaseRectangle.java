@@ -28,8 +28,8 @@ public abstract class BaseRectangle extends GameObject{
 
   public void drawShape() {
     engine.pushMatrix();
-    engine.stroke(color.x, color.y, color.z);
-    engine.noFill();
+    engine.fill(color.x, color.y, color.z);
+    engine.noStroke();
     engine.rect(position.x, position.y, size.x, size.y);
     engine.popMatrix();
   }

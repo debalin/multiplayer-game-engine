@@ -3,7 +3,6 @@ package com.debalin.characters;
 import com.debalin.engine.KeypressUser;
 import com.debalin.engine.MainEngine;
 import com.debalin.util.Constants;
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 
 public class Player extends BaseRectangle implements KeypressUser{
 

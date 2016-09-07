@@ -49,6 +49,7 @@ public class MainEngine extends PApplet {
 
   public void draw() {
     background(backgroundRGB.x, backgroundRGB.y, backgroundRGB.z);
+    controller.manage();
     updatePositions();
     drawShapes();
   }

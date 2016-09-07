@@ -17,4 +17,11 @@ public class Constants {
   public static final PVector PLAYER_INIT_ACC = new PVector(0, 0);
   public static final PVector PLAYER_MAX_ACC = new PVector(0, 0.08f);
 
+  public static final float STAIR_START_Y = -20;
+  public static final PVector STAIR_SIZE = new PVector(40, 10);
+  public static final PVector STAIR_INIT_VEL = new PVector(0, 0.5f);
+  public static final int STAIR_SPAWN_INTERVAL = 120;
+  public static final int STAIR_PADDING = 10;
+  public static final PVector STAIR_INIT_ACC = new PVector(0, 0);
+
 }
