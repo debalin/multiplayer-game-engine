@@ -7,12 +7,21 @@ import processing.core.PVector;
 public abstract class BaseRectangle extends GameObject{
 
   protected PVector color;
+
   protected PVector position;
   protected PVector velocity;
   protected PVector acceleration;
   protected PVector size;
 
   protected MainEngine engine;
+
+  public PVector getPosition() {
+    return position;
+  }
+
+  public PVector getSize() {
+    return size;
+  }
 
   public BaseRectangle(PVector color, PVector position, PVector size, PVector velocity, PVector acceleration, MainEngine engine) {
     this.color = new PVector(color.x, color.y, color.z);

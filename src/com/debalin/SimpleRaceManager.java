@@ -8,6 +8,7 @@ import com.debalin.util.Constants;
 import processing.core.PVector;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class SimpleRaceManager extends Controller{
 
@@ -46,6 +47,18 @@ public class SimpleRaceManager extends Controller{
     if (engine.frameCount % Constants.STAIR_SPAWN_INTERVAL == 0) {
       spawnStair();
     }
+    removeStairs();
+  }
+
+  private void removeStairs() {
+    synchronized (stairs) {
+      Iterator<FallingStair> i = stairs.iterator();
+      while (i.hasNext()) {
+        FallingStair stair = i.next();
+        if (!stair.isVISIBLE())
+          i.remove();
+      }
+    }
   }
 
   private void spawnStair() {
@@ -62,7 +75,7 @@ public class SimpleRaceManager extends Controller{
   }
 
   private void initializePlayer() {
-    player = new Player(engine);
+    player = new Player(engine, stairs);
   }
 
 }

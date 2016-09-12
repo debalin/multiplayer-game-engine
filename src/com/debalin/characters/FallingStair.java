@@ -19,6 +19,12 @@ public class FallingStair extends BaseRectangle {
 
   public void updatePosition() {
     position.add(velocity);
+    checkBounds();
+  }
+
+  private void checkBounds() {
+    if (position.y > Constants.RESOLUTION.y)
+      VISIBLE = false;
   }
 
 }
