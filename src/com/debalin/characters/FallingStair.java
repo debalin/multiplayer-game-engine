@@ -13,7 +13,7 @@ public class FallingStair extends BaseRectangle {
     VISIBLE = true;
   }
 
-  public boolean isVISIBLE() {
+  public boolean isVisible() {
     return VISIBLE;
   }
 

@@ -3,6 +3,7 @@ package com.debalin.engine;
 import processing.core.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class MainEngine extends PApplet {
 
@@ -22,7 +23,7 @@ public class MainEngine extends PApplet {
   }
 
   public void registerGameObject(GameObject gameObject) {
-    gameObjects.add(gameObject);
+    this.gameObjects.add(gameObject);
   }
 
   public void registerKeypressUser(KeypressUser keypressUser) {
@@ -65,7 +66,22 @@ public class MainEngine extends PApplet {
   }
 
   public void updatePositions() {
-    gameObjects.forEach(GameObject::updatePosition);
+    synchronized (gameObjects) {
+      Iterator<GameObject> i = gameObjects.iterator();
+      while (i.hasNext()) {
+        GameObject gameObject = i.next();
+        if (!gameObject.isVisible()) {
+          i.remove();
+        }
+        else {
+          gameObject.updatePosition();
+        }
+      }
+    }
+  }
+
+  public void registerGameObjects(ArrayList<GameObject> gameObjects) {
+    this.gameObjects = gameObjects;
   }
 
   public void drawShapes() {

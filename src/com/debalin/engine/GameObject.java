@@ -13,4 +13,6 @@ public abstract class GameObject {
   public abstract void updatePosition();
   public abstract void drawShape();
 
+  public abstract boolean isVisible();
+
 }

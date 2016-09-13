@@ -13,9 +13,14 @@ public class Player extends BaseRectangle implements KeypressUser{
   ArrayList<FallingStair> stairs;
   private FallingStair collidedStair;
   private States state;
+  private boolean VISIBLE;
 
   private enum States {
     ON_GROUND, ON_STAIR, ON_AIR
+  }
+
+  public boolean isVisible() {
+    return VISIBLE;
   }
 
   public Player(MainEngine engine, ArrayList<FallingStair> stairs) {
@@ -23,7 +28,9 @@ public class Player extends BaseRectangle implements KeypressUser{
     this.stairs = stairs;
     LEFT = RIGHT = JUMP = false;
     state = States.ON_GROUND;
+    VISIBLE = true;
   }
+
 
   public void updatePosition() {
     switch (state) {
@@ -48,11 +55,9 @@ public class Player extends BaseRectangle implements KeypressUser{
   private void isStillOnStair() {
     boolean check;
 
-    check = (!collidedStair.isVISIBLE());
+    check = (!collidedStair.isVisible());
     check = check || (position.x < collidedStair.getPosition().x - size.x || position.x > collidedStair.getPosition().x + collidedStair.getSize().x);
     check = check || (position.y >= collidedStair.getPosition().y + size.y + 5);
-
-    System.out.println(check);
 
     if (check) {
       acceleration.y = Constants.PLAYER_MAX_ACC.y;

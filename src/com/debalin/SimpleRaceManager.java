@@ -2,10 +2,7 @@ package com.debalin;
 
 import com.debalin.characters.FallingStair;
 import com.debalin.characters.Player;
-import com.debalin.engine.Controller;
-import com.debalin.engine.GameClient;
-import com.debalin.engine.GameServer;
-import com.debalin.engine.MainEngine;
+import com.debalin.engine.*;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
@@ -66,6 +63,7 @@ public class SimpleRaceManager extends Controller {
     initializePlayer();
     registerPlayer();
     registerKeypressUsers();
+
     if (serverMode) {
       registerServer();
     }
@@ -85,10 +83,23 @@ public class SimpleRaceManager extends Controller {
   }
 
   public void manage() {
-    if (engine.frameCount % Constants.STAIR_SPAWN_INTERVAL == 0) {
-      spawnStair();
+    if (serverMode) {
+      if (engine.frameCount % Constants.STAIR_SPAWN_INTERVAL == 0) {
+        spawnStair();
+      }
+      removeStairs();
     }
-    removeStairs();
+    else {
+      registerStairs();
+    }
+  }
+
+  private void registerStairs() {
+    ArrayList<GameObject> gameObjects = new ArrayList<>();
+    gameObjects.add(player);
+    gameObjects.addAll(stairs);
+
+    engine.registerGameObjects(gameObjects);
   }
 
   private void removeStairs() {
@@ -96,7 +107,7 @@ public class SimpleRaceManager extends Controller {
       Iterator<FallingStair> i = stairs.iterator();
       while (i.hasNext()) {
         FallingStair stair = i.next();
-        if (!stair.isVISIBLE())
+        if (!stair.isVisible())
           i.remove();
       }
     }
