@@ -4,14 +4,7 @@ import com.debalin.engine.GameObject;
 import com.debalin.engine.MainEngine;
 import processing.core.PVector;
 
-public abstract class BaseRectangle extends GameObject{
-
-  protected PVector color;
-
-  protected PVector position;
-  protected PVector velocity;
-  protected PVector acceleration;
-  protected PVector size;
+public abstract class BaseRectangle extends GameObject {
 
   protected MainEngine engine;
 

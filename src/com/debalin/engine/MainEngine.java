@@ -9,6 +9,8 @@ public class MainEngine extends PApplet {
   public ArrayList<GameObject> gameObjects;
   public ArrayList<KeypressUser> keypressUsers;
   public static Controller controller;
+  public GameServer gameServer;
+  public GameClient gameClient;
 
   public static PVector resolution;
   public static PVector backgroundRGB;
@@ -45,6 +47,14 @@ public class MainEngine extends PApplet {
 
   public void setup() {
     controller.setEngine(this);
+    startServers();
+  }
+
+  private void startServers() {
+    if (gameServer != null)
+      (new Thread(gameServer)).start();
+    if (gameClient != null)
+      (new Thread(gameClient)).start();
   }
 
   public void draw() {
@@ -72,6 +82,20 @@ public class MainEngine extends PApplet {
     for (KeypressUser keypressUser : keypressUsers) {
       keypressUser.handleKeypress(key, false);
     }
+  }
+
+  public GameClient registerClient(String remoteServerAddress, int remoteServerPort, Controller controller) {
+    if (gameClient == null)
+      gameClient = new GameClient(remoteServerAddress, remoteServerPort, controller);
+
+    return gameClient;
+  }
+
+  public GameServer registerServer(int localServerPort, Controller controller) {
+    if (gameServer == null)
+      gameServer = new GameServer(localServerPort, controller);
+
+    return gameServer;
   }
 
 }

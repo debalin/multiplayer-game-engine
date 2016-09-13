@@ -24,4 +24,7 @@ public class Constants {
   public static final int STAIR_PADDING = 10;
   public static final PVector STAIR_INIT_ACC = new PVector(0, 0);
 
+  public static final int SERVER_PORT = 5678;
+  public static final String SERVER_ADDRESS = "localhost";
+
 }
