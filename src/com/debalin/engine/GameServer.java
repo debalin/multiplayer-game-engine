@@ -3,6 +3,7 @@ package com.debalin.engine;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GameServer implements Runnable {
 
@@ -10,6 +11,10 @@ public class GameServer implements Runnable {
   private int localServerPort;
   private Controller controller;
   private ArrayList<Socket> serverConnections;
+
+  public static enum NetworkTag {
+    OBJECT, START_TAG, END_TAG
+  }
 
   public GameServer(int localServerPort, Controller controller) {
     this.localServerPort = localServerPort;
@@ -39,10 +44,14 @@ public class GameServer implements Runnable {
   }
 
   private void maintainClientReadConnection(Socket serverConnection) {
-    DataInputStream in;
+    ObjectInputStream in = null;
+    try {
+      in = new ObjectInputStream(serverConnection.getInputStream());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
     try {
-      in = new DataInputStream(serverConnection.getInputStream());
       System.out.println(in.readUTF());
       controller.getDataFromClient(null);
     }
@@ -52,15 +61,28 @@ public class GameServer implements Runnable {
   }
 
   private void maintainClientWriteConnection(Socket serverConnection) {
-    DataOutputStream out;
-
+    ObjectOutputStream out = null;
     try {
-      ArrayList<Serializable> dataToSend = controller.sendDataFromServer();
-      out = new DataOutputStream(serverConnection.getOutputStream());
-      out.writeUTF("Writing stuff from server to client (" + serverConnection.getRemoteSocketAddress() + ").");
-    }
-    catch (IOException e) {
+      out = new ObjectOutputStream(serverConnection.getOutputStream());
+    } catch (IOException e) {
       e.printStackTrace();
+    }
+
+    while (true) {
+      try {
+        ConcurrentLinkedQueue<GameObject> dataToSend = controller.sendDataFromServer();
+
+        GameObject startObject = new NetworkStartTag();
+        out.writeObject(startObject);
+
+        for (GameObject object : dataToSend)
+          out.writeObject(object);
+
+        GameObject endObject = new NetworkEndTag();
+        out.writeObject(endObject);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
   }
 

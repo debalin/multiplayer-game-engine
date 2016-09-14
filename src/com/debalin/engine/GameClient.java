@@ -2,7 +2,7 @@ package com.debalin.engine;
 
 import java.net.*;
 import java.io.*;
-import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GameClient implements Runnable {
 
@@ -25,28 +25,50 @@ public class GameClient implements Runnable {
   }
 
   private void maintainServerReadConnection() {
-    DataInputStream in;
-
+    ObjectInputStream in = null;
     try {
-      in = new DataInputStream(clientConnection.getInputStream());
-      System.out.println(in.readUTF());
-      controller.getDataFromServer(null);
-    }
-    catch (IOException e) {
+      in = new ObjectInputStream(clientConnection.getInputStream());
+    } catch (IOException e) {
       e.printStackTrace();
+    }
+    ConcurrentLinkedQueue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
+
+    while (true) {
+      while (true) {
+        try {
+          GameObject gameObject = (GameObject) in.readObject();
+          if (gameObject.tag == GameServer.NetworkTag.START_TAG) {
+            gameObjects = new ConcurrentLinkedQueue<>();
+          } else if (gameObject.tag == GameServer.NetworkTag.OBJECT) {
+            gameObjects.add(gameObject);
+          } else if (gameObject.tag == GameServer.NetworkTag.END_TAG) {
+            break;
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+      if (gameObjects != null && gameObjects.size() > 0)
+        controller.getDataFromServer(gameObjects);
+      gameObjects = null;
     }
   }
 
   private void maintainServerWriteConnection() {
-    DataOutputStream out;
-
+    ObjectOutputStream out = null;
     try {
-      ArrayList<Serializable> dataToSend = controller.sendDataFromClient();
-      out = new DataOutputStream(clientConnection.getOutputStream());
-      out.writeUTF("Writing stuff from client to server (" + clientConnection.getRemoteSocketAddress() + ").");
-    }
-    catch (IOException e) {
+      out = new ObjectOutputStream(clientConnection.getOutputStream());
+    } catch (IOException e) {
       e.printStackTrace();
+    }
+
+    while (true) {
+      try {
+        ConcurrentLinkedQueue<GameObject> dataToSend = controller.sendDataFromClient();
+        out.writeUTF("Writing stuff from client to server (" + clientConnection.getRemoteSocketAddress() + ").");
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
   }
 

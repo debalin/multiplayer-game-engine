@@ -1,7 +1,6 @@
 package com.debalin.engine;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class Controller {
 
@@ -16,16 +15,16 @@ public abstract class Controller {
 
   public abstract void manage();
 
-  public ArrayList<Serializable> sendDataFromServer() {
+  public ConcurrentLinkedQueue<GameObject> sendDataFromServer() {
     return null;
   }
 
-  public ArrayList<Serializable> sendDataFromClient() {
+  public ConcurrentLinkedQueue<GameObject> sendDataFromClient() {
     return null;
   }
 
-  public void getDataFromServer(ArrayList<Serializable> dataFromServer) {}
+  public void getDataFromServer(ConcurrentLinkedQueue<GameObject> dataFromServer) {}
 
-  public void getDataFromClient(ArrayList<Serializable> dataFromClient) {}
+  public void getDataFromClient(ConcurrentLinkedQueue<GameObject> dataFromClient) {}
 
 }

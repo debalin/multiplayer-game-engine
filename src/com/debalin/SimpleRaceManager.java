@@ -6,21 +6,21 @@ import com.debalin.engine.*;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class SimpleRaceManager extends Controller {
 
   public Player player;
-  public ArrayList<FallingStair> stairs;
+  public ConcurrentLinkedQueue<GameObject> stairs;
   public boolean serverMode;
   public GameServer gameServer;
   public GameClient gameClient;
 
   public SimpleRaceManager(boolean serverMode) {
     this.serverMode = serverMode;
-    stairs = new ArrayList<>();
+    stairs = new ConcurrentLinkedQueue<>();
   }
 
   public static void main(String args[]) {
@@ -55,8 +55,15 @@ public class SimpleRaceManager extends Controller {
     engine.registerGameObject(player);
   }
 
-  public ArrayList<Serializable> sendDataFromServer() {
-    return null;
+  public ConcurrentLinkedQueue<GameObject> sendDataFromServer() {
+    return stairs;
+  }
+
+  public void getDataFromServer(ConcurrentLinkedQueue<GameObject> gameObjects) {
+    for (GameObject gameObject : gameObjects) {
+      ((FallingStair) gameObject).engine = engine;
+    }
+    this.stairs = gameObjects;
   }
 
   public void initialize() {
@@ -104,9 +111,9 @@ public class SimpleRaceManager extends Controller {
 
   private void removeStairs() {
     synchronized (stairs) {
-      Iterator<FallingStair> i = stairs.iterator();
+      Iterator<GameObject> i = stairs.iterator();
       while (i.hasNext()) {
-        FallingStair stair = i.next();
+        FallingStair stair = (FallingStair) i.next();
         if (!stair.isVisible())
           i.remove();
       }

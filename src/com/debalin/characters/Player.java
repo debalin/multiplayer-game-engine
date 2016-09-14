@@ -1,16 +1,17 @@
 package com.debalin.characters;
 
+import com.debalin.engine.GameObject;
 import com.debalin.engine.KeypressUser;
 import com.debalin.engine.MainEngine;
 import com.debalin.util.Collision;
 import com.debalin.util.Constants;
 
-import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Player extends BaseRectangle implements KeypressUser{
 
   private boolean LEFT, RIGHT, JUMP;
-  ArrayList<FallingStair> stairs;
+  ConcurrentLinkedQueue<GameObject> stairs;
   private FallingStair collidedStair;
   private States state;
   private boolean VISIBLE;
@@ -23,7 +24,7 @@ public class Player extends BaseRectangle implements KeypressUser{
     return VISIBLE;
   }
 
-  public Player(MainEngine engine, ArrayList<FallingStair> stairs) {
+  public Player(MainEngine engine, ConcurrentLinkedQueue<GameObject> stairs) {
     super(Constants.PLAYER_COLOR, Constants.PLAYER_INIT_POS, Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_INIT_ACC, engine);
     this.stairs = stairs;
     LEFT = RIGHT = JUMP = false;
@@ -86,14 +87,14 @@ public class Player extends BaseRectangle implements KeypressUser{
   }
 
   private void checkStairCollision() {
-    stairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
-      position.y = stair.getPosition().y - size.y - 3;
+    stairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, (FallingStair) stair)).forEach(stair -> {
+      position.y = ((FallingStair) stair).getPosition().y - size.y - 3;
       LEFT = false;
       RIGHT = false;
       velocity.y = Constants.STAIR_INIT_VEL.y;
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
       changeState(States.ON_STAIR);
-      collidedStair = stair;
+      collidedStair = (FallingStair) stair;
     });
   }
 

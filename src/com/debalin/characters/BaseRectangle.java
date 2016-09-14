@@ -6,7 +6,7 @@ import processing.core.PVector;
 
 public abstract class BaseRectangle extends GameObject {
 
-  protected MainEngine engine;
+  transient public MainEngine engine;
 
   public PVector getPosition() {
     return position;
