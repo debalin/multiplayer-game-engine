@@ -1,10 +1,12 @@
 package com.debalin.engine;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 public abstract class Controller {
 
   public MainEngine engine;
+
+  public Integer clientCount = 0;
 
   public void setEngine(MainEngine engine) {
     this.engine = engine;
@@ -15,16 +17,28 @@ public abstract class Controller {
 
   public abstract void manage();
 
-  public ConcurrentLinkedQueue<GameObject> sendDataFromServer() {
+  public int incrementClientCount() {
+    synchronized (clientCount) {
+      return ++clientCount;
+    }
+  }
+
+  public int getClientCount() {
+    synchronized (clientCount) {
+      return clientCount;
+    }
+  }
+
+  public Queue<GameObject> sendDataFromServer() {
     return null;
   }
 
-  public ConcurrentLinkedQueue<GameObject> sendDataFromClient() {
+  public Queue<GameObject> sendDataFromClient() {
     return null;
   }
 
-  public void getDataFromServer(ConcurrentLinkedQueue<GameObject> dataFromServer) {}
+  public void getDataFromServer(Queue<GameObject> dataFromServer) {}
 
-  public void getDataFromClient(ConcurrentLinkedQueue<GameObject> dataFromClient) {}
+  public void getDataFromClient(Queue<GameObject> dataFromClient, int connectionID) {}
 
 }

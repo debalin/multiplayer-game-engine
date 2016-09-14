@@ -6,14 +6,14 @@ import com.debalin.engine.MainEngine;
 import com.debalin.util.Collision;
 import com.debalin.util.Constants;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
-public class Player extends BaseRectangle implements KeypressUser{
+public class Player extends BaseRectangle implements KeypressUser {
 
-  private boolean LEFT, RIGHT, JUMP;
-  ConcurrentLinkedQueue<GameObject> stairs;
-  private FallingStair collidedStair;
-  private States state;
+  private transient boolean LEFT, RIGHT, JUMP;
+  private transient Queue<GameObject> stairs;
+  private transient FallingStair collidedStair;
+  private transient States state;
   private boolean VISIBLE;
 
   private enum States {
@@ -24,7 +24,7 @@ public class Player extends BaseRectangle implements KeypressUser{
     return VISIBLE;
   }
 
-  public Player(MainEngine engine, ConcurrentLinkedQueue<GameObject> stairs) {
+  public Player(MainEngine engine, Queue<GameObject> stairs) {
     super(Constants.PLAYER_COLOR, Constants.PLAYER_INIT_POS, Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_INIT_ACC, engine);
     this.stairs = stairs;
     LEFT = RIGHT = JUMP = false;
@@ -32,8 +32,7 @@ public class Player extends BaseRectangle implements KeypressUser{
     VISIBLE = true;
   }
 
-
-  public void updatePosition() {
+  public synchronized void updatePosition() {
     switch (state) {
       case ON_GROUND:
         checkBounds();

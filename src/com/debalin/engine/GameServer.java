@@ -3,6 +3,8 @@ package com.debalin.engine;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GameServer implements Runnable {
@@ -10,9 +12,9 @@ public class GameServer implements Runnable {
   private ServerSocket serverSocket;
   private int localServerPort;
   private Controller controller;
-  private ArrayList<Socket> serverConnections;
+  private List<Socket> serverConnections;
 
-  public static enum NetworkTag {
+  public enum NetworkTag {
     OBJECT, START_TAG, END_TAG
   }
 
@@ -37,30 +39,44 @@ public class GameServer implements Runnable {
       Socket serverConnection = acceptConnections();
       if (serverConnection != null) {
         serverConnections.add(serverConnection);
-        new Thread(() -> maintainClientReadConnection(serverConnection)).start();
-        new Thread(() -> maintainClientWriteConnection(serverConnection)).start();
+        new Thread(() -> maintainClientReadConnection(serverConnection, serverConnections.size() - 1)).start();
+        new Thread(() -> maintainClientWriteConnection(serverConnection, serverConnections.size() - 1)).start();
       }
     }
   }
 
-  private void maintainClientReadConnection(Socket serverConnection) {
+  private void maintainClientReadConnection(Socket serverConnection, int connectionID) {
     ObjectInputStream in = null;
     try {
       in = new ObjectInputStream(serverConnection.getInputStream());
     } catch (IOException e) {
       e.printStackTrace();
     }
+    Queue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
 
-    try {
-      System.out.println(in.readUTF());
-      controller.getDataFromClient(null);
-    }
-    catch (IOException e) {
-      e.printStackTrace();
+    while (true) {
+      while (true) {
+        try {
+          GameObject gameObject = (GameObject) in.readObject();
+          if (gameObject.tag == GameServer.NetworkTag.START_TAG) {
+            gameObjects = new ConcurrentLinkedQueue<>();
+          } else if (gameObject.tag == GameServer.NetworkTag.OBJECT) {
+            gameObjects.add(gameObject);
+          } else if (gameObject.tag == GameServer.NetworkTag.END_TAG) {
+            break;
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+      if (gameObjects != null && gameObjects.size() > 0) {
+        controller.getDataFromClient(gameObjects, connectionID);
+      }
+      gameObjects = null;
     }
   }
 
-  private void maintainClientWriteConnection(Socket serverConnection) {
+  private void maintainClientWriteConnection(Socket serverConnection, int connectionID) {
     ObjectOutputStream out = null;
     try {
       out = new ObjectOutputStream(serverConnection.getOutputStream());
@@ -70,8 +86,7 @@ public class GameServer implements Runnable {
 
     while (true) {
       try {
-        ConcurrentLinkedQueue<GameObject> dataToSend = controller.sendDataFromServer();
-
+        Queue<GameObject> dataToSend = controller.sendDataFromServer();
         GameObject startObject = new NetworkStartTag();
         out.writeObject(startObject);
 
@@ -80,6 +95,7 @@ public class GameServer implements Runnable {
 
         GameObject endObject = new NetworkEndTag();
         out.writeObject(endObject);
+        out.reset();
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -90,6 +106,7 @@ public class GameServer implements Runnable {
     Socket serverConnection = null;
     try {
       serverConnection = serverSocket.accept();
+      controller.incrementClientCount();
       System.out.println("Server accepted connection to " + serverConnection.getRemoteSocketAddress() + ".");
     } catch (IOException e) {
       e.printStackTrace();

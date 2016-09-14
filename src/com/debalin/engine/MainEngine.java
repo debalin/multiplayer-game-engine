@@ -4,11 +4,13 @@ import processing.core.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 public class MainEngine extends PApplet {
 
-  public ArrayList<GameObject> gameObjects;
-  public ArrayList<KeypressUser> keypressUsers;
+  public List<List<GameObject>> gameObjectsCluster;
+  public List<KeypressUser> keypressUsers;
   public static Controller controller;
   public GameServer gameServer;
   public GameClient gameClient;
@@ -17,13 +19,22 @@ public class MainEngine extends PApplet {
   public static PVector backgroundRGB;
   public static int smoothFactor;
 
+  public List<Boolean> updateOrNotArray;
+
   public MainEngine() {
-    gameObjects = new ArrayList<>();
-    keypressUsers = new ArrayList<>();
+    gameObjectsCluster = new ArrayList<>();
+    keypressUsers = new LinkedList<>();
+    updateOrNotArray = new ArrayList<>();
   }
 
-  public void registerGameObject(GameObject gameObject) {
-    this.gameObjects.add(gameObject);
+  public int registerGameObject(GameObject gameObject, int gameObjectListID, boolean update) {
+    if (gameObjectListID == -1) {
+      gameObjectListID = gameObjectsCluster.size();
+      gameObjectsCluster.add(new LinkedList<>());
+      updateOrNotArray.add(update);
+    }
+    gameObjectsCluster.get(gameObjectListID).add(gameObject);
+    return gameObjectListID;
   }
 
   public void registerKeypressUser(KeypressUser keypressUser) {
@@ -66,26 +77,35 @@ public class MainEngine extends PApplet {
   }
 
   public void updatePositions() {
-    synchronized (gameObjects) {
-      Iterator<GameObject> i = gameObjects.iterator();
-      while (i.hasNext()) {
-        GameObject gameObject = i.next();
-        if (!gameObject.isVisible()) {
-          i.remove();
-        }
-        else {
-          gameObject.updatePosition();
+    int count = 0;
+    for (List<GameObject> gameObjects : gameObjectsCluster) {
+      if (updateOrNotArray.get(count)) {
+        Iterator<GameObject> i = gameObjects.iterator();
+        while (i.hasNext()) {
+          GameObject gameObject = i.next();
+          if (!gameObject.isVisible()) {
+            i.remove();
+          } else {
+            gameObject.updatePosition();
+          }
         }
       }
+      count++;
     }
   }
 
-  public void registerGameObjects(ArrayList<GameObject> gameObjects) {
-    this.gameObjects = gameObjects;
+  public int registerGameObjects(List<GameObject> gameObjects, int gameObjectListID, boolean update) {
+    if (gameObjectListID == -1) {
+      gameObjectListID = gameObjectsCluster.size();
+      gameObjectsCluster.add(new LinkedList<>());
+      updateOrNotArray.add(update);
+    }
+    gameObjectsCluster.set(gameObjectListID, gameObjects);
+    return gameObjectListID;
   }
 
   public void drawShapes() {
-    gameObjects.forEach(GameObject::drawShape);
+    gameObjectsCluster.forEach(gameObjects -> gameObjects.forEach(GameObject::drawShape));
   }
 
   public void keyPressed() {

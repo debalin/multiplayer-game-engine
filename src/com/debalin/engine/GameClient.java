@@ -2,6 +2,7 @@ package com.debalin.engine;
 
 import java.net.*;
 import java.io.*;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GameClient implements Runnable {
@@ -31,7 +32,7 @@ public class GameClient implements Runnable {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    ConcurrentLinkedQueue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
+    Queue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
 
     while (true) {
       while (true) {
@@ -48,8 +49,9 @@ public class GameClient implements Runnable {
           e.printStackTrace();
         }
       }
-      if (gameObjects != null && gameObjects.size() > 0)
+      if (gameObjects != null && gameObjects.size() > 0) {
         controller.getDataFromServer(gameObjects);
+      }
       gameObjects = null;
     }
   }
@@ -64,8 +66,16 @@ public class GameClient implements Runnable {
 
     while (true) {
       try {
-        ConcurrentLinkedQueue<GameObject> dataToSend = controller.sendDataFromClient();
-        out.writeUTF("Writing stuff from client to server (" + clientConnection.getRemoteSocketAddress() + ").");
+        Queue<GameObject> dataToSend = controller.sendDataFromClient();
+        GameObject startObject = new NetworkStartTag();
+        out.writeObject(startObject);
+
+        for (GameObject object : dataToSend)
+          out.writeObject(object);
+
+        GameObject endObject = new NetworkEndTag();
+        out.writeObject(endObject);
+        out.reset();
       } catch (IOException e) {
         e.printStackTrace();
       }

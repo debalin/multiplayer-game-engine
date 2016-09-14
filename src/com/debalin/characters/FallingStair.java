@@ -17,7 +17,7 @@ public class FallingStair extends BaseRectangle {
     return VISIBLE;
   }
 
-  public void updatePosition() {
+  public synchronized void updatePosition() {
     position.add(velocity);
     checkBounds();
   }
