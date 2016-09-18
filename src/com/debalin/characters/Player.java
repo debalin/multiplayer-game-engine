@@ -5,8 +5,10 @@ import com.debalin.engine.KeypressUser;
 import com.debalin.engine.MainEngine;
 import com.debalin.util.Collision;
 import com.debalin.util.Constants;
+import processing.core.PVector;
 
 import java.util.Queue;
+import java.util.Random;
 
 public class Player extends BaseRectangle implements KeypressUser {
 
@@ -15,6 +17,7 @@ public class Player extends BaseRectangle implements KeypressUser {
   private transient FallingStair collidedStair;
   private transient States state;
   private boolean VISIBLE;
+  private Random colorRandom;
 
   private enum States {
     ON_GROUND, ON_STAIR, ON_AIR
@@ -26,6 +29,8 @@ public class Player extends BaseRectangle implements KeypressUser {
 
   public Player(MainEngine engine, Queue<GameObject> stairs) {
     super(Constants.PLAYER_COLOR, Constants.PLAYER_INIT_POS, Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_INIT_ACC, engine);
+    colorRandom = new Random();
+    color = (new PVector(colorRandom.nextInt(255), colorRandom.nextInt(255), colorRandom.nextInt(255))).copy();
     this.stairs = stairs;
     LEFT = RIGHT = JUMP = false;
     state = States.ON_GROUND;

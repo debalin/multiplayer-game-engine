@@ -1,5 +1,7 @@
 package com.debalin.engine;
 
+import com.sun.xml.internal.ws.api.pipe.Engine;
+
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -65,7 +67,15 @@ public class GameServer implements Runnable {
           } else if (gameObject.tag == GameServer.NetworkTag.END_TAG) {
             break;
           }
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
+          e.printStackTrace();
+          if (e.getMessage().equals(EngineConstants.readErrorMessage)) {
+            System.out.println("Connection lost with client" + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
+            return;
+          }
+        }
+        catch (Exception e) {
           e.printStackTrace();
         }
       }
@@ -98,6 +108,10 @@ public class GameServer implements Runnable {
         out.reset();
       } catch (IOException e) {
         e.printStackTrace();
+        if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
+          System.out.println("Connection lost with client" + serverConnection.getRemoteSocketAddress() + ", will stop server write thread.");
+          return;
+        }
       }
     }
   }

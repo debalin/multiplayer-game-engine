@@ -45,7 +45,15 @@ public class GameClient implements Runnable {
           } else if (gameObject.tag == GameServer.NetworkTag.END_TAG) {
             break;
           }
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
+          e.printStackTrace();
+          if (e.getMessage().equals(EngineConstants.readErrorMessage)) {
+            System.out.println("Connection lost with server, will stop client read thread.");
+            return;
+          }
+        }
+        catch (Exception e) {
           e.printStackTrace();
         }
       }
@@ -78,6 +86,10 @@ public class GameClient implements Runnable {
         out.reset();
       } catch (IOException e) {
         e.printStackTrace();
+        if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
+          System.out.println("Connection lost with server, will stop client write thread.");
+          return;
+        }
       }
     }
   }
