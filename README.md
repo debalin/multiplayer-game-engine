@@ -2,7 +2,7 @@
 
 ### Homework Spec 
 
-The homework spec can be found in the root directory as HW1.pdf. Below is a brief excerpt from the same: 
+The homework spec can be found in `[root_dir]\docs\HW1.pdf`. Below is a brief excerpt from the same: 
 
 Your task for this assignment is to explore the basics of constructing a multi-threaded network server. This
 will be the first part of your game engine that you will develop throughout the course of the semester. As
@@ -21,7 +21,7 @@ In this assignment, I had an introduction to the basic concepts of a game engine
 There are two ways to run my program:
 
 1. JAR:
-    1. Find the JAR file for this project in `.\out\artifacts\CSC591_GE_HW1.jar\CSC591_GE_HW1.jar`.
+    1. Find the JAR file for this project in `[root_dir]\out\artifacts\CSC591_GE_HW1.jar\CSC591_GE_HW1.jar`.
     2. Open a command line and type `java -jar CSC591_GE_HW1.jar s` (for server).
     3. For running clients, type and execute `java -jar CSC591_GE_HW1.jar c` as many times you want for any number of clients.
     4. Remember that you need the run the server first and then the clients, otherwise this might throw some exception. 
