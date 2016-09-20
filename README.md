@@ -149,7 +149,7 @@ other consumer threads. For this change I experimented with the `notify` call. I
  Also as the producer exits, there is no one to notify the consumers any more and hence the program
  goes into a perpetual wait state at that point.
  
- 2. **ForkExample2.java**: For the second change, I have completed the producer consumer model with a data structure 
+2. **ForkExample2.java**: For the second change, I have completed the producer consumer model with a data structure 
   containing random numbers which get added by the producer and consumed (printed on the screen) by the consumer. All the consumers wait unless anybody is 
    notifying them or if the array is empty. The producer on the other hand fills up the array, notifies some consumer and
    goes to sleep. The consumer wakes up and consumes a number and notifies another thread waiting
