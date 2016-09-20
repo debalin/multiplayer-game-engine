@@ -20,7 +20,7 @@ In this assignment, I had an introduction to the basic concepts of a game engine
 
 There are two ways to run my multiplayer game / engine demo:
 
-1. JAR:
+1. **JAR**:
     1. Find the JAR file for this project in `[root_dir]\out\artifacts\CSC591_GE_HW1.jar\CSC591_GE_HW1.jar`.
     2. Open a command line and type `java -jar CSC591_GE_HW1.jar s` (for server).
     3. For running clients, type and execute `java -jar CSC591_GE_HW1.jar c` as many times you want for any number of clients.
@@ -28,7 +28,7 @@ There are two ways to run my multiplayer game / engine demo:
      Also currently, the client searches for a running server in `localhost`, so running the server and client in different computers will not work. If you still want to run it in different computers,
       follow my second way of running the program and before building it, open `Constants.java` and assign the server's IP to the `SERVER_ADDRESS` String variable.
       
-2. IntelliJ:
+2. **IntelliJ**:
     1. Install [IntelliJ Community Edition](https://www.jetbrains.com/idea/download/#section=windows).
     2. Import and build my project.
     3. There should be two run configurations - one for the server and one for the client. Run the "Server" first and then the "Client". The shortcut for running programs in IntelliJ is `Alt + Shift + F10`.
@@ -38,6 +38,7 @@ When you run the server, you should see a small square which you can control usi
 which you can jump on and jump from there to other stairs. When you start the client(s), you will see the same stairs (color and position) coming on their screen as well.
  These are sent from the server. On the server side, you can see the clients' squares and how they are playing the game. This data is sent from the
   client(s) to the server. 
+  
  
  ### Processing
  
@@ -46,11 +47,11 @@ which you can jump on and jump from there to other stairs. When you start the cl
  I have followed that idea and build a simple playground to demonstrate the components of my engine. 
  There are two main components of this playground:
  
- 1. <strong>Stairs</strong>: These are rectangles of fixed width and height, but of random colors, 
+ 1. **Stairs**: These are rectangles of fixed width and height, but of random colors, 
  which keep coming from above the top of the Processing window with a constant downwards velocity and disappear 
  below the window. 
  
- 2. <strong>Player</strong>: The player controls a square of random color (of different dimension than
+ 2. **Player**: The player controls a square of random color (of different dimension than
  the rectangles). He can move the player left and right using the `A` and `D` keyboard keys and jump
  using the `SPACEBAR`. His left or right motion gets carried on when he jumps. In this way he can jump on the top of the 
  stairs and from each of those, jump to other ones and thus reach the top part of the window. 
@@ -75,7 +76,7 @@ What I mean is that anybody can take my engine and build a game if they want. Th
 be provided by `Processing`, but things like game objects, update & draw loops, networking, etc. will be provided 
  by my engine. This class (`MainEngine`) extends the `PApplet` class in `Processing`. I will try to categorize the components and explain them in detail in the following sub-sections: 
  
- 1. <strong>Game Objects</strong>: `GameObject` is an abstract class present in my engine, which exposes the update and draw loops to 
+ 1. **Game Objects**: `GameObject` is an abstract class present in my engine, which exposes the update and draw loops to 
  the game. Anybody intending to put any kind of game object which will be drawn to the screen 
  has to extend this class and implement these two methods. In `updatePosition`, they would apply all the game
  logic and in `drawShape`, they would draw the object to the screen. They can use the `PApplet` class, which will passed to the game 
@@ -88,7 +89,7 @@ be provided by `Processing`, but things like game objects, update & draw loops, 
    This can be done by calling `registerKeypressUsers` in the engine instance (this will be done by the `Controller` instance).
    
    
- 2. <strong>Controller</strong>: `Controller` is an abstract class which should be extended by a manager class in the game. 
+ 2. **Controller**: `Controller` is an abstract class which should be extended by a manager class in the game. 
   This will be a bridge between the `MainEngine` class and everything else in the game. This is a design decision that I thought 
     will be appropriate for a game developer. This is the class that should have the `main` method. In the `main` method it should ideally call the `startEngine` static method which is present 
       in the `MainEngine` class. The `startEngine` is the one which starts of the `PApplet` `main` method behind the scenes of the game developer. This will consequently
