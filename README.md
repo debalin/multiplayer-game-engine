@@ -38,9 +38,8 @@ When you run the server, you should see a small square which you can control usi
 which you can jump on and jump from there to other stairs. When you start the client(s), you will see the same stairs (color and position) coming on their screen as well.
  These are sent from the server. On the server side, you can see the clients' squares and how they are playing the game. This data is sent from the
   client(s) to the server. 
-  
- 
- ### Processing
+
+### Processing
  
  As suggested by the homework specification, I have used Processing for building my engine and the game. 
  Professor advised to make simple rectangles draw on the screen and to allow the user to interact with them.
