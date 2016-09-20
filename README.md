@@ -238,3 +238,11 @@ of connected clients. The data received on each end is asynchronously made avail
     me in my playground) should make sure that the ones which are not required to be sent over the network, 
     be marked `transient`, as I have done with certain class variables in `FallingStair` and `Player`. 
 
+### Appendix
+
+![Client screen (purple square represents player)](screenshots/client.png?raw=true)
+
+![Server screen with 1 client (blue -> server, purple -> client)](screenshots/server_1_client.png?raw=true)
+
+![Server screen with 2 clients (blue -> server, purple, green -> client)](screenshots/server_2_clients.png?raw=true)
+
