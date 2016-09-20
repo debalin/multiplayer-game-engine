@@ -23,8 +23,9 @@ There are two ways to run my multiplayer game / engine demo:
 1. **JAR**:
     1. Find the JAR file for this project in `[root_dir]\out\artifacts\CSC591_GE_HW1.jar\CSC591_GE_HW1.jar`.
     2. Open a command line and type `java -jar CSC591_GE_HW1.jar s` (for server).
-    3. For running clients, type and execute `java -jar CSC591_GE_HW1.jar c` as many times you want for any number of clients.
-    4. Remember that you need the run the server first and then the clients, otherwise this might throw some exception. 
+    3. For running clients, open other command lines, type and execute `java -jar CSC591_GE_HW1.jar c` as many times you want for any number of clients.
+    4. Remember that you need the run the server first and then the clients, otherwise this might throw some exception.
+     This should be normal, as for most multiplayer games, the headless server generally is always running.
      Also currently, the client searches for a running server in `localhost`, so running the server and client in different computers will not work. If you still want to run it in different computers,
       follow my second way of running the program and before building it, open `Constants.java` and assign the server's IP to the `SERVER_ADDRESS` String variable.
       
@@ -36,8 +37,9 @@ There are two ways to run my multiplayer game / engine demo:
       
 When you run the server, you should see a small square which you can control using `A`, `D` and `SPACEBAR`. You will also see some rectangles (stairs) coming from the top 
 which you can jump on and jump from there to other stairs. When you start the client(s), you will see the same stairs (color and position) coming on their screen as well.
- These are sent from the server. On the server side, you can see the clients' squares and how they are playing the game. This data is sent from the
-  client(s) to the server. 
+ These are sent from the server. On the client screen, you can move the client square around and play the game as usual, as if the rectangles were generated from the client side. On the server side, you can see the clients' squares and how they are playing the game. This data is sent from the
+  client(s) to the server. Note that the transfer is a little sluggish, and this is most apparent on the server screen.
+  This is a known issue and I have not put in any effort to optimize it for this homework.
 
 ### Processing
  
@@ -112,11 +114,11 @@ be provided by `Processing`, but things like game objects, update & draw loops, 
  client. Additionally, the `Controller` instance exposes `sendDataFromServer` and `getDataFromClient` to be used
  by the game instance which acts as a server to send data from the server and get data from clients. 
  These methods are called by the independent server connection threads when it receives / sends data.
- The data structures are not synchronized from an engine perspective and should be taken care of 
+ The data structures are only partially synchronized from an engine perspective and should be taken care of
  by the game itself. 
  
  4. **Client**: `GameClient` is similar to `GameServer` except that the `Controller` exposes `sendDataFromClient`
-   and `getDataFromServer` for the game instance which runs as a client to execute. Also, after the `MainEngine` creates the `GameClient`
+   and `getDataFromServer` for the game instance which runs as a client, to execute. Also, after the `MainEngine` creates the `GameClient`
      instance, it tries to connect with the server. When it successfully does the same, it spawns two new threads for reading and writing from/to the server.
      This client behavior can be registered by calling the `registerClient` method in the engine instance. 
      This would ideally be done from `Controller` instance in the game. 
@@ -175,7 +177,7 @@ using `CyclicBarrier` in Java. If you have noticed in the earlier outputs, there
 As mentioned before, the `GameServer` and `GameClient` are independent components of my engine.  
   The process described in the homework specification is exactly how I have implemented this and 
   I have explained in the earlier section. In brief, my `GameServer` listens for client connections in a new thread.
-   Each `GameClient` looks for the same thing. When a connection is established, the both the server and
+   Each `GameClient` looks for the same server. When a connection is established, the both the server and
     the client create new threads to read and write from/to each other. There is one minor difference though - 
     the server keeps on looking for accepting connections using the `ServerSocket` instance that it has made. 
     But the client, on the other hand only talks to one server at a time - so it does not need to keep
@@ -231,4 +233,8 @@ of connected clients. The data received on each end is asynchronously made avail
   pass an integer referencing the `gameObjectListID`. The engine internally maintains an `List` of `List` of `GameObject` instances. This
   allows the `Controller` to set a list of `GameObject` instances at a certain position of this game object cluster
    at once (like the client setting the list of stairs that it receives from the server, in the engine).
+   It should be also noted that all the game objects that are sent are of `Serializable` nature.
+    It any game specific class extends the `Gameobject` class and adds its own variables, the developer (like
+    me in my playground) should make sure that the ones which are not required to be sent over the network, 
+    be marked `transient`, as I have done with certain class variables in `FallingStair` and `Player`. 
 
