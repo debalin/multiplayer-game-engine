@@ -125,6 +125,51 @@ be provided by `Processing`, but things like game objects, update & draw loops, 
 Now, I will go over the individual sections and show how the simple playground uses these engine components
 and builds a multiplayer experience. 
 
+### Multithreading basics
+
+Before I go to the playground demonstrating my engine, I will cover this part separated-ly. I have 
+  kept this part isolated from the entire engine implementation because of its requirements. To run this part:
+  
+  1. Go to `[root_dir]\fork_example`.
+  2. Run `javac .\ForkExample[x].java`, where `[x]` is a number from `1` to `4`.
+  3. Run `java ForkExample[x]`. 
+  
+I will go through the individual changes one by one:
+
+1. **ForkExample1.java**: First have taken the two thread model and expanded it to an arbitrary number of threads to be spawned.
+Then I have implemented the producer-consumer model with the skeleton that had been provided. Till now, there is 
+no data structure that the producers and consumers work on really, but there is a producer which sleeps twice and wakes up and notifies 
+other consumer threads. For this change I experimented with the `notify` call. I put an extra sleep 
+ before the consumer enters its `wait` such that the producer calls `notify` on any of them. 
+ My test was to see whether `notify` calls get stored and are later delivered to anyone entering the monitor.
+ But as it turns out, the first time that the producer notifies the thread there is no one to listen
+ to that `notify` call and hence it goes to waste. The Java API does not deliver that `notify` call at a later stage. 
+ Also as the producer exits, there is no one to notify the consumers any more and hence the program
+ goes into a perpetual wait state at that point.
+ 
+ 2. **ForkExample2.java**: For the second change, I have completed the producer consumer model with a data structure 
+  containing random numbers which get added by the producer and consumed (printed on the screen) by the consumer. All the consumers wait unless anybody is 
+   notifying them or if the array is empty. The producer on the other hand fills up the array, notifies some consumer and
+   goes to sleep. The consumer wakes up and consumes a number and notifies another thread waiting
+   in the monitor (it may be a producer or a consumer). This cycle continues. 
+
+3. **ForkExample3.java**: For this change, I removed all the synchronized blocks around the data structure. This was possible 
+ because I have used `ConcurrentLinkedQueue`. I tried the program again and it gave the same output (only the consumer outputs are kept), thus 
+ showing me that those data structures are synchronized at an API level. Moreover, there is no wait and notify and instead, 
+ all the threads contest for production and consumption at the same time. This test, though not appropriate all the time (too much contention),
+ will still work correctly.
+ 
+4. **ForkExample4.java**: For this change, I did something interesting and introduced barriers into our producer consumer model
+using `CyclicBarrier` in Java. If you have noticed in the earlier outputs, there was only one thread which
+  woke up, consumed all the numbers and then went to sleep (because they could not get the lock for the data structure) and other threads went into starvation for 
+  that production iteration. Instead I introduced a barrier and tell every thread that it 
+  can only consume two numbers. Whenever it has finished consuming two numbers, it has to exit the consumption
+  loop and wait in a barrier. This barrier expects `NUM_THREADS` number of threads to hit it.
+  This gives a chance for other threads to consume it and hit the barrier too. Once they all hit the 
+  barrier, the cycle of production and consumption starts again. This is noticeable in the output as 
+  one thread consumes only two numbers, and you would be able to see numbers being consumed
+  by other threads. 
+
 ### Networking Basics
 
 As mentioned before, the `GameServer` and `GameClient` are independent components of my engine.  
