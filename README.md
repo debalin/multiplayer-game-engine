@@ -240,9 +240,15 @@ of connected clients. The data received on each end is asynchronously made avail
 
 ### Appendix
 
-![Client screen (purple square represents player)](screenshots/client.png?raw=true)
+**Client screen purple square represents player**
 
-![Server screen with 1 client (blue -> server, purple -> client)](screenshots/server_1_client.png?raw=true)
+![](screenshots/client.png?raw=true)
 
-![Server screen with 2 clients (blue -> server, purple, green -> client)](screenshots/server_2_clients.png?raw=true)
+**Server screen with 1 client (blue -> server, purple -> client)**
+
+![](screenshots/server_1_client.png?raw=true)
+
+**Server screen with 2 clients (blue -> server, purple, green -> client)**
+
+![](screenshots/server_2_clients.png?raw=true)
 
