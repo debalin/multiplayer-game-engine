@@ -37,7 +37,7 @@ public abstract class Controller {
     return null;
   }
 
-  public void getDataFromServer(Queue<GameObject> dataFromServer) {}
+  public void getDataFromServer(Queue<GameObject> dataFromServer, int connectionID) {}
 
   public void getDataFromClient(Queue<GameObject> dataFromClient, int connectionID) {}
 

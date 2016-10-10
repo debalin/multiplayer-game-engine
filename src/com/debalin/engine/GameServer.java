@@ -1,7 +1,5 @@
 package com.debalin.engine;
 
-import com.sun.xml.internal.ws.api.pipe.Engine;
-
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -69,14 +67,14 @@ public class GameServer implements Runnable {
           }
         }
         catch (IOException e) {
-          e.printStackTrace();
           if (e.getMessage().equals(EngineConstants.readErrorMessage)) {
-            System.out.println("Connection lost with client" + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
+            System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
             return;
           }
         }
         catch (Exception e) {
-          e.printStackTrace();
+          System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
+          return;
         }
       }
       if (gameObjects != null && gameObjects.size() > 0) {
@@ -97,7 +95,7 @@ public class GameServer implements Runnable {
     while (true) {
       try {
         Queue<GameObject> dataToSend = controller.sendDataFromServer();
-        GameObject startObject = new NetworkStartTag();
+        GameObject startObject = new NetworkStartTag(connectionID);
         out.writeObject(startObject);
 
         for (GameObject object : dataToSend)
@@ -107,9 +105,8 @@ public class GameServer implements Runnable {
         out.writeObject(endObject);
         out.reset();
       } catch (IOException e) {
-        e.printStackTrace();
         if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
-          System.out.println("Connection lost with client" + serverConnection.getRemoteSocketAddress() + ", will stop server write thread.");
+          System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server write thread.");
           return;
         }
       }

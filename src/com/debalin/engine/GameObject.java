@@ -13,6 +13,7 @@ public abstract class GameObject implements Serializable {
   protected PVector size;
 
   public GameServer.NetworkTag tag = GameServer.NetworkTag.OBJECT;
+  public int connectionID;
 
   public abstract void updatePosition();
   public abstract void drawShape();

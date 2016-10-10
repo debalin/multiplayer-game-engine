@@ -103,15 +103,15 @@ public class Player extends BaseRectangle implements KeypressUser {
   }
 
   private void checkBounds() {
-    if (position.y > Constants.RESOLUTION.y - size.y) {
+    if (position.y > Constants.CLIENT_RESOLUTION.y - size.y) {
       velocity.y = Constants.PLAYER_INIT_VEL.y;
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
-      position.y = Constants.RESOLUTION.y - size.y;
+      position.y = Constants.CLIENT_RESOLUTION.y - size.y;
       state = States.ON_GROUND;
     }
-    if (position.x >= Constants.RESOLUTION.x - size.x) {
+    if (position.x >= Constants.CLIENT_RESOLUTION.x - size.x) {
       RIGHT = false;
-      position.x = Constants.RESOLUTION.x - size.x;
+      position.x = Constants.CLIENT_RESOLUTION.x - size.x;
     }
     if (position.x <= 0) {
       LEFT = false;

@@ -23,12 +23,16 @@ public class SimpleRaceManager extends Controller {
   private int otherPlayersObjectID;
   private int playerObjectID;
 
+  private int clientConnectionID;
+
   public SimpleRaceManager(boolean serverMode) {
     this.serverMode = serverMode;
     stairs = new ConcurrentLinkedQueue<>();
     otherPlayers = new ConcurrentHashMap<>();
 
     stairsObjectID = otherPlayersObjectID = playerObjectID = -1;
+
+    clientConnectionID = -1;
   }
 
   public static void main(String args[]) {
@@ -55,7 +59,7 @@ public class SimpleRaceManager extends Controller {
 
   private void registerConstants() {
     System.out.println("Registering constants.");
-    MainEngine.registerConstants(Constants.RESOLUTION, Constants.SMOOTH_FACTOR, Constants.BACKGROUND_RGB);
+    MainEngine.registerConstants(Constants.CLIENT_RESOLUTION, Constants.SERVER_RESOLUTION, Constants.SMOOTH_FACTOR, Constants.BACKGROUND_RGB, serverMode);
   }
 
   private void registerPlayer() {
@@ -68,15 +72,34 @@ public class SimpleRaceManager extends Controller {
   }
 
   public Queue<GameObject> sendDataFromServer() {
-    return stairs;
+    Queue<GameObject> dataToSend = new ConcurrentLinkedQueue<>();
+    dataToSend.addAll(stairs);
+    dataToSend.addAll(otherPlayers.values());
+
+    return dataToSend;
   }
 
-  public void getDataFromServer(Queue<GameObject> gameObjects) {
-    for (GameObject gameObject : gameObjects) {
-      ((FallingStair) gameObject).engine = engine;
-    }
+  public void getDataFromServer(Queue<GameObject> gameObjects, int connectionID) {
+    clientConnectionID = connectionID;
+
     this.stairs.clear();
-    this.stairs.addAll(gameObjects);
+
+    int i = 0;
+    for (GameObject gameObject : gameObjects) {
+      if (gameObject.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
+        ((FallingStair) gameObject).engine = engine;
+        this.stairs.add(gameObject);
+      }
+      else {
+        Player player = (Player) gameObject;
+        player.engine = engine;
+        int playerIndex = i - this.stairs.size();
+
+        if (playerIndex != connectionID)
+          otherPlayers.put(playerIndex, player);
+      }
+      i++;
+    }
   }
 
   public Queue<GameObject> sendDataFromClient() {
@@ -92,9 +115,11 @@ public class SimpleRaceManager extends Controller {
   }
 
   public void initialize() {
-    initializePlayer();
-    registerPlayer();
-    registerKeypressUsers();
+    if (!serverMode) {
+      initializePlayer();
+      registerPlayer();
+      registerKeypressUsers();
+    }
 
     if (serverMode) {
       registerServer();
@@ -163,7 +188,7 @@ public class SimpleRaceManager extends Controller {
 
   private void spawnStair() {
     PVector stairColor = new PVector((int)engine.random(0, 255), (int)engine.random(0, 255), (int)engine.random(0, 255));
-    PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.RESOLUTION.x - Constants.STAIR_SIZE.y - Constants.STAIR_PADDING), Constants.STAIR_START_Y);
+    PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.x - Constants.STAIR_SIZE.y - Constants.STAIR_PADDING), Constants.STAIR_START_Y);
     FallingStair stair = new FallingStair(engine, stairColor, stairInitPosition);
 
     stairs.add(stair);

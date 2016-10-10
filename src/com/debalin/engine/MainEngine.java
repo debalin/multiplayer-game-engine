@@ -15,11 +15,14 @@ public class MainEngine extends PApplet {
   public GameServer gameServer;
   public GameClient gameClient;
 
-  public static PVector resolution;
+  public static PVector clientResolution;
+  public static PVector serverResolution;
   public static PVector backgroundRGB;
   public static int smoothFactor;
 
   public List<Boolean> updateOrNotArray;
+
+  public static boolean serverMode;
 
   public MainEngine() {
     gameObjectsCluster = new ArrayList<>();
@@ -41,19 +44,31 @@ public class MainEngine extends PApplet {
     keypressUsers.add(keypressUser);
   }
 
-  public static void registerConstants(PVector inputResolution, int inputSmoothFactor, PVector inputBackgroundRGB) {
-    resolution = inputResolution.copy();
+  public static void registerConstants(PVector inputClientResolution, PVector inputServerResolution, int inputSmoothFactor, PVector inputBackgroundRGB, boolean serverModeInput) {
+    clientResolution = inputClientResolution.copy();
+    serverResolution = inputServerResolution.copy();
     smoothFactor = inputSmoothFactor;
     backgroundRGB = inputBackgroundRGB.copy();
+
+    serverMode = serverModeInput;
   }
 
   public static void startEngine(Controller inputController) {
+    if (controller != null) {
+      System.out.println("Controller already set, won't be starting engine again.");
+      return;
+    }
+
     controller = inputController;
     PApplet.main(new String[] { "com.debalin.engine.MainEngine" });
   }
 
   public void settings() {
-    size((int)resolution.x, (int)resolution.y, P2D);
+    if (!serverMode)
+      size((int) clientResolution.x, (int) clientResolution.y, P2D);
+    else
+      size((int) serverResolution.x, (int) serverResolution.y, P2D);
+
     smooth(smoothFactor);
   }
 
@@ -73,7 +88,9 @@ public class MainEngine extends PApplet {
     background(backgroundRGB.x, backgroundRGB.y, backgroundRGB.z);
     controller.manage();
     updatePositions();
-    drawShapes();
+
+    if (!serverMode)
+      drawShapes();
   }
 
   public void updatePositions() {

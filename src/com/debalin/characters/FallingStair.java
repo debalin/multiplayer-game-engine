@@ -23,7 +23,7 @@ public class FallingStair extends BaseRectangle {
   }
 
   private void checkBounds() {
-    if (position.y > Constants.RESOLUTION.y)
+    if (position.y > Constants.CLIENT_RESOLUTION.y)
       VISIBLE = false;
   }
 

@@ -34,11 +34,13 @@ public class GameClient implements Runnable {
     }
     Queue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
 
+    int connectionID = -1;
     while (true) {
       while (true) {
         try {
           GameObject gameObject = (GameObject) in.readObject();
           if (gameObject.tag == GameServer.NetworkTag.START_TAG) {
+            connectionID = gameObject.connectionID;
             gameObjects = new ConcurrentLinkedQueue<>();
           } else if (gameObject.tag == GameServer.NetworkTag.OBJECT) {
             gameObjects.add(gameObject);
@@ -47,18 +49,18 @@ public class GameClient implements Runnable {
           }
         }
         catch (IOException e) {
-          e.printStackTrace();
           if (e.getMessage().equals(EngineConstants.readErrorMessage)) {
             System.out.println("Connection lost with server, will stop client read thread.");
             return;
           }
         }
         catch (Exception e) {
-          e.printStackTrace();
+          System.out.println("Connection lost with server, will stop client read thread.");
+          return;
         }
       }
       if (gameObjects != null && gameObjects.size() > 0) {
-        controller.getDataFromServer(gameObjects);
+        controller.getDataFromServer(gameObjects, connectionID);
       }
       gameObjects = null;
     }
@@ -75,7 +77,7 @@ public class GameClient implements Runnable {
     while (true) {
       try {
         Queue<GameObject> dataToSend = controller.sendDataFromClient();
-        GameObject startObject = new NetworkStartTag();
+        GameObject startObject = new NetworkStartTag(-1);
         out.writeObject(startObject);
 
         for (GameObject object : dataToSend)
@@ -85,7 +87,6 @@ public class GameClient implements Runnable {
         out.writeObject(endObject);
         out.reset();
       } catch (IOException e) {
-        e.printStackTrace();
         if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
           System.out.println("Connection lost with server, will stop client write thread.");
           return;
