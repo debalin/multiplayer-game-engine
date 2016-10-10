@@ -4,7 +4,7 @@ import processing.core.PVector;
 
 public class Constants {
 
-  public static final PVector CLIENT_RESOLUTION = new PVector(1200, 600);
+  public static final PVector CLIENT_RESOLUTION = new PVector(600, 900);
   public static final PVector SERVER_RESOLUTION = new PVector(1, 1);
   public static final int SMOOTH_FACTOR = 4;
   public static final PVector BACKGROUND_RGB = new PVector(60, 60, 60);
