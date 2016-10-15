@@ -1,5 +1,6 @@
 package com.debalin.characters;
 
+import com.debalin.engine.game_objects.DynamicGameObject;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.events.KeypressUser;
 import com.debalin.engine.MainEngine;
@@ -10,15 +11,17 @@ import processing.core.PVector;
 import java.util.Queue;
 import java.util.Random;
 
-public class Player extends BaseRectangle implements KeypressUser {
+public class Player extends MovingRectangle implements KeypressUser {
 
   private transient boolean LEFT, RIGHT, JUMP;
   private transient Queue<GameObject> fallingStairs;
   private transient Queue<GameObject> standingStairs;
-  private transient BaseRectangle collidedStair;
+  private transient GameObject collidedStair;
   private transient States state;
   private boolean VISIBLE;
-  private Random colorRandom;
+  private Random random = new Random();
+
+  private SpawnPoint spawnPoint;
 
   private enum States {
     ON_GROUND, ON_STAIR, ON_AIR
@@ -28,15 +31,16 @@ public class Player extends BaseRectangle implements KeypressUser {
     return VISIBLE;
   }
 
-  public Player(MainEngine engine, Queue<GameObject> fallingStairs, Queue<GameObject> standingStairs) {
-    super(Constants.PLAYER_COLOR, Constants.PLAYER_INIT_POS, Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_INIT_ACC, engine);
-    colorRandom = new Random();
-    color = (new PVector(colorRandom.nextInt(255), colorRandom.nextInt(255), colorRandom.nextInt(255))).copy();
+  public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, Queue<GameObject> standingStairs) {
+    super(Constants.PLAYER_COLOR, spawnPoint.getPosition(), Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_MAX_ACC, engine);
+    color = (new PVector(random.nextInt(255), random.nextInt(255), random.nextInt(255))).copy();
     this.fallingStairs = fallingStairs;
     this.standingStairs = standingStairs;
     LEFT = RIGHT = JUMP = false;
-    state = States.ON_GROUND;
+    state = States.ON_AIR;
     VISIBLE = true;
+
+    this.spawnPoint = spawnPoint;
   }
 
   public synchronized void updatePosition() {
@@ -50,6 +54,7 @@ public class Player extends BaseRectangle implements KeypressUser {
         break;
       case ON_STAIR:
         isStillOnStair();
+        checkDeath();
         break;
     }
 
@@ -57,6 +62,21 @@ public class Player extends BaseRectangle implements KeypressUser {
 
     velocity.add(acceleration);
     position.add(velocity);
+  }
+
+  private void checkDeath() {
+    if (collidedStair.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
+      if (((FallingStair) collidedStair).isDeathStair) {
+        System.out.println("Player is dead.");
+        regenerate();
+      }
+    }
+  }
+
+  private void regenerate() {
+    position = spawnPoint.getPosition().copy();
+    acceleration.y = Constants.PLAYER_MAX_ACC.y;
+    changeState(States.ON_AIR);
   }
 
   private void isStillOnStair() {
@@ -93,24 +113,24 @@ public class Player extends BaseRectangle implements KeypressUser {
   }
 
   private void checkStairCollision() {
-    fallingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, (BaseRectangle) stair)).forEach(stair -> {
+    fallingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
       position.y = (stair).getPosition().y - size.y - 3;
       LEFT = false;
       RIGHT = false;
-      velocity.y = Constants.FALLING_STAIR_INIT_VEL.y;
+      velocity.y = ((DynamicGameObject) stair).getVelocity().y;
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
       changeState(States.ON_STAIR);
-      collidedStair = (BaseRectangle) stair;
+      collidedStair = stair;
     });
 
-    standingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, (BaseRectangle) stair)).forEach(stair -> {
+    standingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
       position.y = (stair).getPosition().y - size.y - 3;
       LEFT = false;
       RIGHT = false;
       velocity.y = 0;
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
       changeState(States.ON_STAIR);
-      collidedStair = (BaseRectangle) stair;
+      collidedStair = stair;
     });
   }
 

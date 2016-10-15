@@ -2,6 +2,7 @@ package com.debalin;
 
 import com.debalin.characters.FallingStair;
 import com.debalin.characters.Player;
+import com.debalin.characters.SpawnPoint;
 import com.debalin.characters.StandingStair;
 import com.debalin.engine.*;
 import com.debalin.engine.game_objects.GameObject;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class SimpleRaceManager extends Controller {
 
   public Player player;
+  public SpawnPoint playerSpawnPoint;
   public Map<Integer, GameObject> otherPlayers;
   public Queue<GameObject> fallingStairs;
   public Queue<GameObject> standingStairs;
@@ -152,7 +154,7 @@ public class SimpleRaceManager extends Controller {
   private void spawnStandingStairs() {
     for (int i = 0; i < Constants.STANDING_STAIR_COUNT; i++) {
       PVector stairColor = new PVector((int) engine.random(0, 255), (int) engine.random(0, 255), (int) engine.random(0, 255));
-      PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.x - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING), engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.y - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING));
+      PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING_X, Constants.CLIENT_RESOLUTION.x - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING_X), engine.random(Constants.STAIR_PADDING_X, Constants.CLIENT_RESOLUTION.y - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING_X));
       StandingStair stair = new StandingStair(engine, stairColor, stairInitPosition);
 
       standingStairs.add(stair);
@@ -234,7 +236,7 @@ public class SimpleRaceManager extends Controller {
 
   private void spawnFallingStair() {
     PVector stairColor = new PVector((int)engine.random(0, 255), (int)engine.random(0, 255), (int)engine.random(0, 255));
-    PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.x - Constants.FALLING_STAIR_SIZE.x - Constants.STAIR_PADDING), Constants.FALLING_STAIR_START_Y);
+    PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING_X, Constants.CLIENT_RESOLUTION.x - Constants.FALLING_STAIR_SIZE.x - Constants.STAIR_PADDING_X), Constants.FALLING_STAIR_START_Y);
     FallingStair stair = new FallingStair(engine, stairColor, stairInitPosition);
 
     fallingStairs.add(stair);
@@ -254,7 +256,8 @@ public class SimpleRaceManager extends Controller {
 
   private void initializePlayer() {
     System.out.println("Initializing player.");
-    player = new Player(engine, fallingStairs, standingStairs);
+    playerSpawnPoint = new SpawnPoint(new PVector(engine.random(Constants.PLAYER_PADDING_X, Constants.CLIENT_RESOLUTION.x - Constants.PLAYER_PADDING_X), Constants.PLAYER_SPAWN_Y));
+    player = new Player(engine, playerSpawnPoint, fallingStairs, standingStairs);
   }
 
 }

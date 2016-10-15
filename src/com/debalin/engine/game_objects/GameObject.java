@@ -10,6 +10,7 @@ public abstract class GameObject implements Serializable {
   protected PVector color;
   protected PVector position;
   protected PVector size;
+  protected boolean visible;
 
   public GameServer.NetworkTag tag = GameServer.NetworkTag.OBJECT;
   public int connectionID;
@@ -17,6 +18,7 @@ public abstract class GameObject implements Serializable {
   public PVector getPosition() {
     return position;
   }
+
   public PVector getSize() {
     return size;
   }
@@ -24,6 +26,8 @@ public abstract class GameObject implements Serializable {
   public abstract void updatePosition();
   public abstract void drawShape();
 
-  public abstract boolean isVisible();
+  public boolean isVisible() {
+    return visible;
+  }
 
 }
