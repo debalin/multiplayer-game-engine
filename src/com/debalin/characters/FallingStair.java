@@ -4,7 +4,7 @@ import com.debalin.engine.MainEngine;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
-public class FallingStair extends BaseRectangle {
+public class FallingStair extends MovingRectangle {
 
   private boolean VISIBLE;
 

@@ -1,4 +1,4 @@
-package com.debalin.engine;
+package com.debalin.engine.util;
 
 public class EngineConstants {
 

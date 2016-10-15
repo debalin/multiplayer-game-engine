@@ -1,5 +1,7 @@
 package com.debalin.engine;
 
+import com.debalin.engine.game_objects.GameObject;
+
 import java.util.Queue;
 
 public abstract class Controller {

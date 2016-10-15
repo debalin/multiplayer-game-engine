@@ -3,6 +3,9 @@ package com.debalin;
 import com.debalin.characters.FallingStair;
 import com.debalin.characters.Player;
 import com.debalin.engine.*;
+import com.debalin.engine.game_objects.GameObject;
+import com.debalin.engine.network.GameClient;
+import com.debalin.engine.network.GameServer;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 

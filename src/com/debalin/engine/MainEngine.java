@@ -1,5 +1,9 @@
 package com.debalin.engine;
 
+import com.debalin.engine.events.KeypressUser;
+import com.debalin.engine.game_objects.GameObject;
+import com.debalin.engine.network.GameClient;
+import com.debalin.engine.network.GameServer;
 import processing.core.*;
 
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
 package com.debalin.characters;
 
-import com.debalin.engine.GameObject;
-import com.debalin.engine.KeypressUser;
+import com.debalin.engine.game_objects.GameObject;
+import com.debalin.engine.events.KeypressUser;
 import com.debalin.engine.MainEngine;
 import com.debalin.util.Collision;
 import com.debalin.util.Constants;
@@ -10,7 +10,7 @@ import processing.core.PVector;
 import java.util.Queue;
 import java.util.Random;
 
-public class Player extends BaseRectangle implements KeypressUser {
+public class Player extends MovingRectangle implements KeypressUser {
 
   private transient boolean LEFT, RIGHT, JUMP;
   private transient Queue<GameObject> stairs;
