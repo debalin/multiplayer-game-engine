@@ -2,6 +2,7 @@ package com.debalin;
 
 import com.debalin.characters.FallingStair;
 import com.debalin.characters.Player;
+import com.debalin.characters.StandingStair;
 import com.debalin.engine.*;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
@@ -17,23 +18,28 @@ public class SimpleRaceManager extends Controller {
 
   public Player player;
   public Map<Integer, GameObject> otherPlayers;
-  public Queue<GameObject> stairs;
+  public Queue<GameObject> fallingStairs;
+  public Queue<GameObject> standingStairs;
   public boolean serverMode;
   public GameServer gameServer;
   public GameClient gameClient;
 
-  private int stairsObjectID;
+  private int fallingStairsObjectID;
+  private int standingStairsObjectID;
   private int otherPlayersObjectID;
   private int playerObjectID;
 
   private int clientConnectionID;
 
+  private boolean oneTimeSend = false;
+
   public SimpleRaceManager(boolean serverMode) {
     this.serverMode = serverMode;
-    stairs = new ConcurrentLinkedQueue<>();
+    fallingStairs = new ConcurrentLinkedQueue<>();
+    standingStairs = new ConcurrentLinkedQueue<>();
     otherPlayers = new ConcurrentHashMap<>();
 
-    stairsObjectID = otherPlayersObjectID = playerObjectID = -1;
+    fallingStairsObjectID = standingStairsObjectID = otherPlayersObjectID = playerObjectID = -1;
 
     clientConnectionID = -1;
   }
@@ -76,8 +82,12 @@ public class SimpleRaceManager extends Controller {
 
   public Queue<GameObject> sendDataFromServer() {
     Queue<GameObject> dataToSend = new ConcurrentLinkedQueue<>();
-    dataToSend.addAll(stairs);
+    dataToSend.addAll(fallingStairs);
     dataToSend.addAll(otherPlayers.values());
+    if (!oneTimeSend) {
+      dataToSend.addAll(standingStairs);
+      oneTimeSend = true;
+    }
 
     return dataToSend;
   }
@@ -85,18 +95,22 @@ public class SimpleRaceManager extends Controller {
   public void getDataFromServer(Queue<GameObject> gameObjects, int connectionID) {
     clientConnectionID = connectionID;
 
-    this.stairs.clear();
+    fallingStairs.clear();
 
     int i = 0;
     for (GameObject gameObject : gameObjects) {
       if (gameObject.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
         ((FallingStair) gameObject).engine = engine;
-        this.stairs.add(gameObject);
+        fallingStairs.add(gameObject);
+      }
+      else if (gameObject.getClass().getTypeName().equals(StandingStair.class.getTypeName())) {
+        ((StandingStair) gameObject).engine = engine;
+        standingStairs.add(gameObject);
       }
       else {
         Player player = (Player) gameObject;
         player.engine = engine;
-        int playerIndex = i - this.stairs.size();
+        int playerIndex = i - fallingStairs.size();
 
         if (playerIndex != connectionID)
           otherPlayers.put(playerIndex, player);
@@ -123,12 +137,31 @@ public class SimpleRaceManager extends Controller {
       registerPlayer();
       registerKeypressUsers();
     }
+    else {
+      spawnStandingStairs();
+    }
 
     if (serverMode) {
       registerServer();
     }
     else {
       registerClient();
+    }
+  }
+
+  private void spawnStandingStairs() {
+    for (int i = 0; i < Constants.STANDING_STAIR_COUNT; i++) {
+      PVector stairColor = new PVector((int) engine.random(0, 255), (int) engine.random(0, 255), (int) engine.random(0, 255));
+      PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.x - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING), engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.y - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING));
+      StandingStair stair = new StandingStair(engine, stairColor, stairInitPosition);
+
+      standingStairs.add(stair);
+
+      if (standingStairsObjectID == -1) {
+        standingStairsObjectID = engine.registerGameObject(stair, standingStairsObjectID, false);
+      } else {
+        engine.registerGameObject(stair, standingStairsObjectID, false);
+      }
     }
   }
 
@@ -144,13 +177,14 @@ public class SimpleRaceManager extends Controller {
 
   public void manage() {
     if (serverMode) {
-      if (engine.frameCount % Constants.STAIR_SPAWN_INTERVAL == 0) {
-        spawnStair();
+      if (engine.frameCount % Constants.FALLING_STAIR_SPAWN_INTERVAL == 0) {
+        spawnFallingStair();
       }
       removeStairs();
     }
     else {
-      registerStairsForClient();
+      registerFallingStairsForClient();
+      registerStandingStairsForClient();
     }
 
     registerOtherPlayers();
@@ -166,21 +200,30 @@ public class SimpleRaceManager extends Controller {
     }
   }
 
-  private void registerStairsForClient() {
+  private void registerFallingStairsForClient() {
     List<GameObject> gameObjects = new LinkedList<>();
-    gameObjects.addAll(stairs);
+    gameObjects.addAll(fallingStairs);
 
-    if (stairsObjectID == -1) {
-      stairsObjectID = engine.registerGameObjects(gameObjects, stairsObjectID, false);
+    if (fallingStairsObjectID == -1) {
+      fallingStairsObjectID = engine.registerGameObjects(gameObjects, fallingStairsObjectID, false);
     }
     else {
-      engine.registerGameObjects(gameObjects, stairsObjectID, false);
+      engine.registerGameObjects(gameObjects, fallingStairsObjectID, false);
+    }
+  }
+
+  private void registerStandingStairsForClient() {
+    if (standingStairsObjectID == -1 && standingStairs.size() > 0) {
+      List<GameObject> gameObjects = new LinkedList<>();
+      gameObjects.addAll(standingStairs);
+
+      standingStairsObjectID = engine.registerGameObjects(gameObjects, standingStairsObjectID, false);
     }
   }
 
   private void removeStairs() {
-    synchronized (stairs) {
-      Iterator<GameObject> i = stairs.iterator();
+    synchronized (fallingStairs) {
+      Iterator<GameObject> i = fallingStairs.iterator();
       while (i.hasNext()) {
         FallingStair stair = (FallingStair) i.next();
         if (!stair.isVisible())
@@ -189,18 +232,18 @@ public class SimpleRaceManager extends Controller {
     }
   }
 
-  private void spawnStair() {
+  private void spawnFallingStair() {
     PVector stairColor = new PVector((int)engine.random(0, 255), (int)engine.random(0, 255), (int)engine.random(0, 255));
-    PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.x - Constants.STAIR_SIZE.y - Constants.STAIR_PADDING), Constants.STAIR_START_Y);
+    PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING, Constants.CLIENT_RESOLUTION.x - Constants.FALLING_STAIR_SIZE.x - Constants.STAIR_PADDING), Constants.FALLING_STAIR_START_Y);
     FallingStair stair = new FallingStair(engine, stairColor, stairInitPosition);
 
-    stairs.add(stair);
+    fallingStairs.add(stair);
 
-    if (stairsObjectID == -1) {
-      stairsObjectID = engine.registerGameObject(stair, stairsObjectID, true);
+    if (fallingStairsObjectID == -1) {
+      fallingStairsObjectID = engine.registerGameObject(stair, fallingStairsObjectID, true);
     }
     else {
-      engine.registerGameObject(stair, stairsObjectID, true);
+      engine.registerGameObject(stair, fallingStairsObjectID, true);
     }
   }
 
@@ -211,7 +254,7 @@ public class SimpleRaceManager extends Controller {
 
   private void initializePlayer() {
     System.out.println("Initializing player.");
-    player = new Player(engine, stairs);
+    player = new Player(engine, fallingStairs, standingStairs);
   }
 
 }

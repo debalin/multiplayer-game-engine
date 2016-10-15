@@ -10,11 +10,12 @@ import processing.core.PVector;
 import java.util.Queue;
 import java.util.Random;
 
-public class Player extends MovingRectangle implements KeypressUser {
+public class Player extends BaseRectangle implements KeypressUser {
 
   private transient boolean LEFT, RIGHT, JUMP;
-  private transient Queue<GameObject> stairs;
-  private transient FallingStair collidedStair;
+  private transient Queue<GameObject> fallingStairs;
+  private transient Queue<GameObject> standingStairs;
+  private transient BaseRectangle collidedStair;
   private transient States state;
   private boolean VISIBLE;
   private Random colorRandom;
@@ -27,11 +28,12 @@ public class Player extends MovingRectangle implements KeypressUser {
     return VISIBLE;
   }
 
-  public Player(MainEngine engine, Queue<GameObject> stairs) {
+  public Player(MainEngine engine, Queue<GameObject> fallingStairs, Queue<GameObject> standingStairs) {
     super(Constants.PLAYER_COLOR, Constants.PLAYER_INIT_POS, Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_INIT_ACC, engine);
     colorRandom = new Random();
     color = (new PVector(colorRandom.nextInt(255), colorRandom.nextInt(255), colorRandom.nextInt(255))).copy();
-    this.stairs = stairs;
+    this.fallingStairs = fallingStairs;
+    this.standingStairs = standingStairs;
     LEFT = RIGHT = JUMP = false;
     state = States.ON_GROUND;
     VISIBLE = true;
@@ -91,14 +93,24 @@ public class Player extends MovingRectangle implements KeypressUser {
   }
 
   private void checkStairCollision() {
-    stairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, (FallingStair) stair)).forEach(stair -> {
-      position.y = ((FallingStair) stair).getPosition().y - size.y - 3;
+    fallingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, (BaseRectangle) stair)).forEach(stair -> {
+      position.y = (stair).getPosition().y - size.y - 3;
       LEFT = false;
       RIGHT = false;
-      velocity.y = Constants.STAIR_INIT_VEL.y;
+      velocity.y = Constants.FALLING_STAIR_INIT_VEL.y;
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
       changeState(States.ON_STAIR);
-      collidedStair = (FallingStair) stair;
+      collidedStair = (BaseRectangle) stair;
+    });
+
+    standingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, (BaseRectangle) stair)).forEach(stair -> {
+      position.y = (stair).getPosition().y - size.y - 3;
+      LEFT = false;
+      RIGHT = false;
+      velocity.y = 0;
+      acceleration.y = Constants.PLAYER_INIT_ACC.y;
+      changeState(States.ON_STAIR);
+      collidedStair = (BaseRectangle) stair;
     });
   }
 

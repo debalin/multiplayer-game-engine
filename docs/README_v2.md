@@ -32,8 +32,8 @@ There are two ways to run my multiplayer game / engine demo:
     3. There should be two run configurations - one for the server and one for the client. Run the "Server" first and then the "Client". The shortcut for running programs in IntelliJ is `Alt + Shift + F10`.
     4. If you don't find the run configurations, make two yourself. For the sever, give a command line argument of `s` and for the client, give a command line argument of `c` (without the quotes).
       
-When you run the server, you should see a small square which you can control using `A`, `D` and `SPACEBAR`. You will also see some rectangles (stairs) coming from the top 
-which you can jump on and jump from there to other stairs. When you start the client(s), you will see the same stairs (color and position) coming on their screen as well.
+When you run the server, you should see a small square which you can control using `A`, `D` and `SPACEBAR`. You will also see some rectangles (fallingStairs) coming from the top 
+which you can jump on and jump from there to other fallingStairs. When you start the client(s), you will see the same fallingStairs (color and position) coming on their screen as well.
  These are sent from the server. On the client screen, you can move the client square around and play the game as usual, as if the rectangles were generated from the client side. On the server side, you can see the clients' squares and how they are playing the game. This data is sent from the
   client(s) to the server. Note that the transfer is a little sluggish, and this is most apparent on the server screen.
   This is a known issue and I have not put in any effort to optimize it for this homework.
@@ -52,8 +52,8 @@ which you can jump on and jump from there to other stairs. When you start the cl
  2. **Player**: The player controls a square of random color (of different dimension than
  the rectangles). He can move the player left and right using the `A` and `D` keyboard keys and jump
  using the `SPACEBAR`. His left or right motion gets carried on when he jumps. In this way he can jump on the top of the 
- stairs and from each of those, jump to other ones and thus reach the top part of the window. 
- The square representing the player checks collision detection with the stairs, from all sides. 
+ fallingStairs and from each of those, jump to other ones and thus reach the top part of the window. 
+ The square representing the player checks collision detection with the fallingStairs, from all sides. 
  The collision response however, is to just put them on top of the stair, no matter where they collided with the stair.
  This helped me keep it simple and not focus too much on the game itself, and instead put in more effort 
  building the engine. Initially, I had thought of keeping
@@ -192,7 +192,7 @@ multiplayer environment becomes the server). This method may not be used by a ga
 engine by simply registering game objects, which draw nothing on the screen (this can be turned on
 by a boolean flag while registering the game objects). 
 
-Anyway, coming back to the point, the job of my server is to generate the falling stairs and send them
+Anyway, coming back to the point, the job of my server is to generate the falling fallingStairs and send them
 as game objects across the network. The clients will receive them and render them on the screen. Thus all
   the heavy-lifting of creating the environment is being done by my server. The clients receive this data and send their own 
   (player) game object instances to the server. The server renders the players (squares) from the client side on the screen.
@@ -220,7 +220,7 @@ creates two threads as it accepts connections (one for reading and one for writi
 (1 for main game loop + 1 for reading data from server + 1 for writing data to server). For server, the number
 of threads depends of the number of connected clients. It can be represented as `1 + 2 * n`, where `n` is the number 
 of connected clients. The data received on each end is asynchronously made available to the game as there are 
- separate threads for these tasks. The main game loop (which keeps calling the `manage` method in the `Controller` instance) keeps updating the set of stairs on the engine side (by calling `registerGameObjects`) with the 
+ separate threads for these tasks. The main game loop (which keeps calling the `manage` method in the `Controller` instance) keeps updating the set of fallingStairs on the engine side (by calling `registerGameObjects`) with the 
   one that is on the game application side. 
  
  For synchronizing the data received from the game perspective, I use a `ConcurrentLinkedQueue` of `GameObject` instances. This is
@@ -229,7 +229,7 @@ of connected clients. The data received on each end is asynchronously made avail
   sense in that respect. Moreover, when my game objects are registered with the engine, the `Controller` has to
   pass an integer referencing the `gameObjectListID`. The engine internally maintains an `List` of `List` of `GameObject` instances. This
   allows the `Controller` to set a list of `GameObject` instances at a certain position of this game object cluster
-   at once (like the client setting the list of stairs that it receives from the server, in the engine).
+   at once (like the client setting the list of fallingStairs that it receives from the server, in the engine).
    It should be also noted that all the game objects that are sent are of `Serializable` nature.
     It any game specific class extends the `Gameobject` class and adds its own variables, the developer (like
     me in my playground) should make sure that the ones which are not required to be sent over the network, 

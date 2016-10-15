@@ -4,12 +4,12 @@ import com.debalin.engine.MainEngine;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
-public class FallingStair extends MovingRectangle {
+public class FallingStair extends BaseRectangle {
 
   private boolean VISIBLE;
 
   public FallingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition) {
-    super(stairColor, stairInitPosition, Constants.STAIR_SIZE, Constants.STAIR_INIT_VEL, Constants.STAIR_INIT_ACC, engine);
+    super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, Constants.FALLING_STAIR_INIT_VEL, Constants.FALLING_STAIR_INIT_ACC, engine);
     VISIBLE = true;
   }
 
@@ -17,7 +17,7 @@ public class FallingStair extends MovingRectangle {
     return VISIBLE;
   }
 
-  public synchronized void updatePosition() {
+  public void updatePosition() {
     position.add(velocity);
     checkBounds();
   }
