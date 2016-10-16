@@ -4,6 +4,7 @@ import com.debalin.engine.events.KeypressUser;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
 import com.debalin.engine.network.GameServer;
+import com.debalin.engine.util.TextRenderer;
 import processing.core.*;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class MainEngine extends PApplet {
 
   public List<List<GameObject>> gameObjectsCluster;
   public List<KeypressUser> keypressUsers;
+  public List<TextRenderer> textRenderers;
   public static Controller controller;
   public GameServer gameServer;
   public GameClient gameClient;
@@ -32,6 +34,7 @@ public class MainEngine extends PApplet {
     gameObjectsCluster = new ArrayList<>();
     keypressUsers = new LinkedList<>();
     updateOrNotArray = new ArrayList<>();
+    textRenderers = new ArrayList<>();
   }
 
   public int registerGameObject(GameObject gameObject, int gameObjectListID, boolean update) {
@@ -47,6 +50,8 @@ public class MainEngine extends PApplet {
   public void registerKeypressUser(KeypressUser keypressUser) {
     keypressUsers.add(keypressUser);
   }
+
+  public void registerTextRenderer(TextRenderer textRenderer) { textRenderers.add(textRenderer); }
 
   public static void registerConstants(PVector inputClientResolution, PVector inputServerResolution, int inputSmoothFactor, PVector inputBackgroundRGB, boolean serverModeInput) {
     clientResolution = inputClientResolution.copy();
@@ -93,8 +98,22 @@ public class MainEngine extends PApplet {
     controller.manage();
     updatePositions();
 
-    if (!serverMode)
+    if (!serverMode) {
       drawShapes();
+      drawText();
+    }
+  }
+
+  private void drawText() {
+    for (TextRenderer textRenderer : textRenderers) {
+      String content = textRenderer.getTextContent();
+      PVector position = textRenderer.getTextPosition();
+
+      pushMatrix();
+      fill(255, 255, 255);
+      text(content, position.x, position.y);
+      popMatrix();
+    }
   }
 
   public void updatePositions() {

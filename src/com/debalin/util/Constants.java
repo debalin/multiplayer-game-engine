@@ -35,4 +35,7 @@ public class Constants {
   public static final int SERVER_PORT = 5678;
   public static final String SERVER_ADDRESS = "localhost";
 
+  public static final PVector SCORE_POSITION = new PVector(CLIENT_RESOLUTION.x - 150, 50);
+  public static final int SCORE_INCREMENT_INTERVAL = 500;
+
 }

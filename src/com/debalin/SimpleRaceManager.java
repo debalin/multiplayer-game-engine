@@ -8,14 +8,16 @@ import com.debalin.engine.*;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
 import com.debalin.engine.network.GameServer;
+import com.debalin.engine.util.TextRenderer;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class SimpleRaceManager extends Controller {
+public class SimpleRaceManager extends Controller implements TextRenderer {
 
   public Player player;
   public SpawnPoint playerSpawnPoint;
@@ -34,6 +36,7 @@ public class SimpleRaceManager extends Controller {
   private int clientConnectionID;
 
   private boolean oneTimeSend = false;
+  DecimalFormat dateFormat = new DecimalFormat();
 
   public SimpleRaceManager(boolean serverMode) {
     this.serverMode = serverMode;
@@ -44,6 +47,8 @@ public class SimpleRaceManager extends Controller {
     fallingStairsObjectID = standingStairsObjectID = otherPlayersObjectID = playerObjectID = -1;
 
     clientConnectionID = -1;
+
+    dateFormat.setMaximumFractionDigits(2);
   }
 
   public static void main(String args[]) {
@@ -66,6 +71,23 @@ public class SimpleRaceManager extends Controller {
 
     System.out.println("Starting engine.");
     MainEngine.startEngine(this);
+  }
+
+  public String getTextContent() {
+    String content = "";
+
+    for (int index : otherPlayers.keySet()) {
+      Player player = (Player) otherPlayers.get(index);
+      content += "Player " + index + ": " + dateFormat.format(player.getScore()) + "\n";
+    }
+
+    content += "\nMy score: " + dateFormat.format(player.getScore());
+
+    return content;
+  }
+
+  public PVector getTextPosition() {
+    return Constants.SCORE_POSITION;
   }
 
   private void registerConstants() {
@@ -138,6 +160,7 @@ public class SimpleRaceManager extends Controller {
       initializePlayer();
       registerPlayer();
       registerKeypressUsers();
+      registerTextRenderers();
     }
     else {
       spawnStandingStairs();
@@ -149,6 +172,11 @@ public class SimpleRaceManager extends Controller {
     else {
       registerClient();
     }
+  }
+
+  private void registerTextRenderers() {
+    System.out.println("Registering text renderers.");
+    engine.registerTextRenderer(this);
   }
 
   private void spawnStandingStairs() {
@@ -216,6 +244,7 @@ public class SimpleRaceManager extends Controller {
 
   private void registerStandingStairsForClient() {
     if (standingStairsObjectID == -1 && standingStairs.size() > 0) {
+      System.out.println("Registering standing stairs for once.");
       List<GameObject> gameObjects = new LinkedList<>();
       gameObjects.addAll(standingStairs);
 

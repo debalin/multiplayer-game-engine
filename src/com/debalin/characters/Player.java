@@ -4,6 +4,7 @@ import com.debalin.engine.game_objects.DynamicGameObject;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.events.KeypressUser;
 import com.debalin.engine.MainEngine;
+import com.debalin.engine.util.TextRenderer;
 import com.debalin.util.Collision;
 import com.debalin.util.Constants;
 import processing.core.PVector;
@@ -19,9 +20,11 @@ public class Player extends MovingRectangle implements KeypressUser {
   private transient GameObject collidedStair;
   private transient States state;
   private boolean VISIBLE;
-  private Random random = new Random();
+  private float score = 100;
+  private transient PVector averagePosition = new PVector(0, 0);
+  private transient Random random = new Random();
 
-  private SpawnPoint spawnPoint;
+  private transient SpawnPoint spawnPoint;
 
   private enum States {
     ON_GROUND, ON_STAIR, ON_AIR
@@ -62,12 +65,21 @@ public class Player extends MovingRectangle implements KeypressUser {
 
     velocity.add(acceleration);
     position.add(velocity);
+
+    averagePosition.add(position).div(2);
+    if (engine.frameCount % Constants.SCORE_INCREMENT_INTERVAL == 0)
+      score *= ((Constants.CLIENT_RESOLUTION.y - averagePosition.y) / Constants.CLIENT_RESOLUTION.y);
+  }
+
+  public float getScore() {
+    return (score < 0) ? 0 : score;
   }
 
   private void checkDeath() {
     if (collidedStair.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
       if (((FallingStair) collidedStair).isDeathStair) {
         System.out.println("Player is dead.");
+        score -= 20;
         regenerate();
       }
     }
@@ -121,6 +133,7 @@ public class Player extends MovingRectangle implements KeypressUser {
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
       changeState(States.ON_STAIR);
       collidedStair = stair;
+      score += 10;
     });
 
     standingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
@@ -131,6 +144,7 @@ public class Player extends MovingRectangle implements KeypressUser {
       acceleration.y = Constants.PLAYER_INIT_ACC.y;
       changeState(States.ON_STAIR);
       collidedStair = stair;
+      score += 7;
     });
   }
 
