@@ -34,20 +34,21 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
   private int playerObjectID;
 
   private int clientConnectionID;
+  private Set<Integer> connectionIDs;
 
-  private boolean oneTimeSend = false;
-  DecimalFormat dateFormat = new DecimalFormat();
+  DecimalFormat dateFormat;
 
   public SimpleRaceManager(boolean serverMode) {
     this.serverMode = serverMode;
     fallingStairs = new ConcurrentLinkedQueue<>();
     standingStairs = new ConcurrentLinkedQueue<>();
     otherPlayers = new ConcurrentHashMap<>();
-
     fallingStairsObjectID = standingStairsObjectID = otherPlayersObjectID = playerObjectID = -1;
 
     clientConnectionID = -1;
+    connectionIDs = new HashSet<>();
 
+    dateFormat = new DecimalFormat();
     dateFormat.setMaximumFractionDigits(2);
   }
 
@@ -104,13 +105,13 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
       engine.registerGameObject(player, playerObjectID, true);
   }
 
-  public Queue<GameObject> sendDataFromServer() {
+  public Queue<GameObject> sendDataFromServer(int connectionID) {
     Queue<GameObject> dataToSend = new ConcurrentLinkedQueue<>();
     dataToSend.addAll(fallingStairs);
     dataToSend.addAll(otherPlayers.values());
-    if (!oneTimeSend) {
+    if (!connectionIDs.contains(connectionID)) {
       dataToSend.addAll(standingStairs);
-      oneTimeSend = true;
+      connectionIDs.add(connectionID);
     }
 
     return dataToSend;

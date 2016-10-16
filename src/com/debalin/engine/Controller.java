@@ -31,7 +31,7 @@ public abstract class Controller {
     }
   }
 
-  public Queue<GameObject> sendDataFromServer() {
+  public Queue<GameObject> sendDataFromServer(int connectionID) {
     return null;
   }
 

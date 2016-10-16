@@ -100,7 +100,7 @@ public class GameServer implements Runnable {
 
     while (true) {
       try {
-        Queue<GameObject> dataToSend = controller.sendDataFromServer();
+        Queue<GameObject> dataToSend = controller.sendDataFromServer(connectionID);
         GameObject startObject = new NetworkStartTag(connectionID);
         out.writeObject(startObject);
 
