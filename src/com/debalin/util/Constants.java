@@ -22,7 +22,7 @@ public class Constants {
   public static final PVector FALLING_STAIR_SIZE = new PVector(80, 10);
   public static final float FALLING_STAIR_MIN_VEL_Y = 0.5f;
   public static final float FALLING_STAIR_MAX_VEL_Y = 1.6f;
-  public static final int FALLING_STAIR_SPAWN_INTERVAL = 280;
+  public static final int FALLING_STAIR_SPAWN_INTERVAL = 200;
   public static final int STAIR_PADDING_X = 10;
   public static final PVector FALLING_STAIR_INIT_ACC = new PVector(0, 0);
   public static final float DEATH_STAIR_PROBABILITY = 0.8f;
