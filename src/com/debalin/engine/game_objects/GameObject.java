@@ -15,11 +15,27 @@ public abstract class GameObject implements Serializable {
   public GameServer.NetworkTag tag = GameServer.NetworkTag.OBJECT;
   public int connectionID;
 
-  public PVector getPosition() {
-    return position;
-  }
+  public PVector getPosition() { return position; }
   public PVector getSize() {
     return size;
+  }
+  public PVector getColor() { return color; }
+  public int getConnectionID() { return connectionID; }
+
+  public void setColor(PVector color) {
+    this.color = color;
+  }
+  public void setPosition(PVector position) {
+    this.position = position;
+  }
+  public void setSize(PVector size) {
+    this.size = size;
+  }
+  public void setVisible(boolean visible) {
+    this.visible = visible;
+  }
+  public void setConnectionID(int connectionID) {
+    this.connectionID = connectionID;
   }
 
   public abstract void updatePosition();
