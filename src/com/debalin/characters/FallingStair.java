@@ -9,12 +9,17 @@ public class FallingStair extends MovingRectangle {
   protected boolean isDeathStair = false;
   protected transient boolean killedPlayer = false;
 
+  public boolean isDeathStair() { return isDeathStair; }
+
   public void setKilledPlayer(boolean killedPlayer) {
     this.killedPlayer = killedPlayer;
   }
+  public void setDeathStair(boolean deathStair) {
+    isDeathStair = deathStair;
+  }
 
   public FallingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition) {
-    super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, new PVector(0, engine.random(Constants.FALLING_STAIR_MAX_VEL_Y)), Constants.FALLING_STAIR_INIT_ACC, engine);
+    super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, new PVector(0, engine.random(Constants.FALLING_STAIR_MIN_VEL_Y, Constants.FALLING_STAIR_MAX_VEL_Y)), Constants.FALLING_STAIR_INIT_ACC, engine);
     visible = true;
 
     if (engine.random(0, 1) > Constants.DEATH_STAIR_PROBABILITY)

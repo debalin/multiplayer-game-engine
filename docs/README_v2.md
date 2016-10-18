@@ -1,4 +1,4 @@
-## CSC591 (Game Engine Foundations) Homework 1: Network Foundations
+## CSC591 (Game Engine Foundations) Homework 2
 
 ### Homework Spec 
 
@@ -8,17 +8,14 @@ Your task for this assignment is to add more functionality to your Processing en
 
 ### Introduction
 
-In this assignment, I had an introduction to the basic concepts of a game engine. Though we were building a multi-threaded server/client architecture, I paid enough attention to make other parts of my engine as generic as possible.
- I made my engine as a library which can be used and extended as and when necessary. I will be describing the individual parts of my engine
-  as I go forward explaining each section of this assignment. Also, I will mention all my engine components in a 
-  separate list with a brief description of each of them.
+I built the implementation of this assignment on my last homework assignment code. On a side note, I had already implemented quite a lot of this assignment in the first homework and hence devoted my time to fine tune and optimize my code to remove lags and improve efficiency. Specifically, I extended my Game Object Model from the first assignment a little bit, did not have to do anything for the second part as it was already done, added death zones and spawn points for the third part and impelemented a string network protocol for the fourth part and compared with my existing method of transmitting data over the network. In any case, I would explain each part in the following sections, starting with instructions on how to run my program. 
    
 ### Running my program
 
 There are two ways to run my multiplayer game / engine demo:
 
 1. **JAR**:
-    1. Find the JAR file for this project in `[root_dir]\out\artifacts\CSC591_GE_HW1.jar\CSC591_GE_HW1.jar`.
+    1. Find the JAR file for this project in `[root_dir]\out\artifacts\CSC591_GE_HW1.jar\CSC591_GE_HW1.jar`. (ignore the project name as I have been using the same IntelliJ project from the first homework)
     2. Open a command line and type `java -jar CSC591_GE_HW1.jar s` (for server).
     3. For running clients, open other command lines, type and execute `java -jar CSC591_GE_HW1.jar c` as many times you want for any number of clients.
     4. Remember that you need the run the server first and then the clients, otherwise this might throw some exception.
@@ -32,220 +29,94 @@ There are two ways to run my multiplayer game / engine demo:
     3. There should be two run configurations - one for the server and one for the client. Run the "Server" first and then the "Client". The shortcut for running programs in IntelliJ is `Alt + Shift + F10`.
     4. If you don't find the run configurations, make two yourself. For the sever, give a command line argument of `s` and for the client, give a command line argument of `c` (without the quotes).
       
-When you run the server, you should see a small square which you can control using `A`, `D` and `SPACEBAR`. You will also see some rectangles (fallingStairs) coming from the top 
-which you can jump on and jump from there to other fallingStairs. When you start the client(s), you will see the same fallingStairs (color and position) coming on their screen as well.
- These are sent from the server. On the client screen, you can move the client square around and play the game as usual, as if the rectangles were generated from the client side. On the server side, you can see the clients' squares and how they are playing the game. This data is sent from the
-  client(s) to the server. Note that the transfer is a little sluggish, and this is most apparent on the server screen.
-  This is a known issue and I have not put in any effort to optimize it for this homework.
+When you run the server, you should see a small square which you can control using `A`, `D` and `SPACEBAR`. You will also see some rectangles (`FallingStairs`) coming from the top 
+which you can jump on and jump from there to other `FallingStairs`. When you start the client(s), you will see the same `FallingStairs` (color and position) coming on their screen as well.
+ These are sent from the server. On the client screen, you can move the client square around and play the game as usual, as if the rectangles were generated from the client side. In this assignment, I have made the server headless, as it should actually be. But as I am using Processing, it is not possible to compeletely make it headless, i.e. to make the display screen invisible. So I have (albeit a little hacky-ly) just reduced the window size for the server process to a mere 10x10, and nothing gets displayed there, thus almost giving it the headless feel. One more thing to note is that if you want to use my string protocol instead of game object protocol for sending data from servers to clients, you need to change the `stringProtocol` boolean in the `com.debalin.engine.util.EngineConstants.java` file. If you remember my last submission, you would notice that this version runs with almost no noticeable lag. 
 
-### Processing
+### Game Object Model
  
- As suggested by the homework specification, I have used Processing for building my engine and the game. 
- Professor advised to make simple rectangles draw on the screen and to allow the user to interact with them.
- I have followed that idea and build a simple playground to demonstrate the components of my engine. 
- There are two main components of this playground:
- 
- 1. **Stairs**: These are rectangles of fixed width and height, but of random colors, 
- which keep coming from above the top of the Processing window with a constant downwards velocity and disappear 
- below the window. 
- 
- 2. **Player**: The player controls a square of random color (of different dimension than
- the rectangles). He can move the player left and right using the `A` and `D` keyboard keys and jump
- using the `SPACEBAR`. His left or right motion gets carried on when he jumps. In this way he can jump on the top of the 
- fallingStairs and from each of those, jump to other ones and thus reach the top part of the window. 
- The square representing the player checks collision detection with the fallingStairs, from all sides. 
- The collision response however, is to just put them on top of the stair, no matter where they collided with the stair.
- This helped me keep it simple and not focus too much on the game itself, and instead put in more effort 
- building the engine. Initially, I had thought of keeping
-   a goal to reach in the top, but due to time constraints, I figured to leave it at this. So,
-   there is no real goal for this game and hence, I simply call it a playground instead of a game.
-   But it is important to note that this simple playground fulfills all the required criteria for this section 
-   of the homework and allows me to properly demonstrate the data transfers in my server/client architecture, which I will talk
-   about in a bit.
-
-Before going on to describe the later sections of the homework, I will lay out the architecture of my engine which 
-contains the multi-threaded server/client implementation (which is the main goal of this homework) as well as some other
-important game engine components, which are significant from a design perspective and future modularization.
- 
-### Engine 
-
-As I started building the engine from scratch, my main goal was to make it as modular and independent as possible.
-What I mean is that anybody can take my engine and build a game if they want. The graphics portion will obviously
-be provided by `Processing`, but things like game objects, update & draw loops, networking, etc. will be provided 
- by my engine. This class (`MainEngine`) extends the `PApplet` class in `Processing`. I will try to categorize the components and explain them in detail in the following sub-sections: 
- 
- 1. **Game Objects**: `GameObject` is an abstract class present in my engine, which exposes the update and draw loops to 
- the game. Anybody intending to put any kind of game object which will be drawn to the screen 
- has to extend this class and implement these two methods. In `updatePosition`, they would apply all the game
- logic and in `drawShape`, they would draw the object to the screen. They can use the `PApplet` class, which will passed to the game 
-  by the engine (I'll come to this later). In the playground that I have been talking about, `FallingStair` and `Player` 
-   are `GameObject` instances. All these game objects have to be "registered" with the `MainEngine` instance by the `Controller` instance (the class in the 
-   game which has extended this class). This can be done with `registerGameObject` or `registerGameObjects`, depending 
-   upon if you have one object that you want to register or a list of them. These two functions basically
-   store the game objects in the engine class and they are later used by the `MainEngine` instance to call their 
-   `updatePosition` and `drawShape` methods. Now, among these game objects, some might be requiring binding to key presses.
-   This can be done by calling `registerKeypressUsers` in the engine instance (this will be done by the `Controller` instance).
-   
-   
- 2. **Controller**: `Controller` is an abstract class which should be extended by a manager class in the game. 
-  This will be a bridge between the `MainEngine` class and everything else in the game. This is a design decision that I thought 
-    will be appropriate for a game developer. This is the class that should have the `main` method. In the `main` method it should ideally call the `startEngine` static method which is present 
-      in the `MainEngine` class. The `startEngine` is the one which starts of the `PApplet` `main` method behind the scenes of the game developer. This will consequently
-      call the `settings`, `setup` and finally the `draw` call in `Processing`. In the `setup` method, 
-      `MainEngine` calls the `setEngine` method in the `Controller` instance and passes its own reference, which can be 
-      used later by the game to call the `PApplet` functions and by the manager itself to call engine specific functions.
-       This method also has the call to a certain abstract `initialize` method in the `Controller` which is basically 
-       a way for the `Controller` instance in the game to initialize its components. It could actually do all initializations in the
-       main method, but there is one thing that is changed over the course of time from when it first entered 
-       the `main` method to now when the `MainEngine` is making its `initialize` method being called - 
-       and that is the `MainEngine` reference itself which the engine set in the `setEngine` method. Now, 
-       the game `Controller` can use the engine instance to register game objects, server, client, etc.
-       The class which extends this `Controller` base class in my playground is `SimpleRaceManager` (named such because
-       I had initially thought to make this a racing game). 
+I looked into all possible cases that I can use for building my Game Object Model and finally decided on using Monolithic Hierarchy for my game engine. It might be a little old in its use cases and there are certain disadvantages like feature creeps and bubble up effects, but if used correctly, monolithic hierarchy can be used to yield pretty optimal results. Furthermore, it should be noted that monolithic hierarchy is the most intuitive among probably other models like pure component or generic component model, which makes it a lot easier to build your game architecture in as a beginning. Also, I have given enough care to make the hierarchy such that it can be extended later with ease. Also, monolithic hierarchy should not be confused with older C games which have all the functionality in one single big file, but rather just a technique to significantly use inheritance among all other OOP fundamentals to architect your game engine. In the following portion, I will list my inheritance tree with explanations for each node in the tree. 
        
-       
- 3. **Server**: `GameServer` is a class which has to be registered from the `Controller` instance using the 
- `registerServer` method in `MainEngine`, passing it the server port (this port is in the discretion of the game itself).
- Once it gets registered, the engine starts a new thread of the server. This thread opens up a Java `ServerSocket`
- and listens for incoming connections. Whenever a client connects to this server, the server opens up two new threads for reading and writing data from/to the
- client. Additionally, the `Controller` instance exposes `sendDataFromServer` and `getDataFromClient` to be used
- by the game instance which acts as a server to send data from the server and get data from clients. 
- These methods are called by the independent server connection threads when it receives / sends data.
- The data structures are only partially synchronized from an engine perspective and should be taken care of
- by the game itself. 
+ 1. **`GameObject`**: At the top of the inheritance tree is `GameObject` which is a part of my `Engine` and is an abstract class. This contains the basic properties (as fields) needed for any game object - **color**, **size**, **position**, **visible** and **connectionID**. All of these fields are self explanatory except probably **connectionID**. This variable is supposed to keep the connection ID for a client in a multiplayer game. It should also be noted that these variables are specifically suited a 2D game and that's fine for our use case. This abstract class contains abstract methods for `draw` and `updatePosition`. It is inherited by two abstract methods which are also a part of engine: 
+     1. **`StaticGameObject`**: This, as the name says is supposed to hold static game objects. As because this does not need any velocity or acceleration this does not have any specific fields, but can be extended later to incorporate other things. It is inherited by one object which is part of the game:
+        1. **`NonMovingRectangle`**: This is supposed to give a base class for my static stairs. This is also an abstract class. This is finally extended and concretized by `StandingStair` and `SpawnPoint`, with respective implementations for the `draw` method and empty implementations for `updatePosition`.
+            1. **`StandingStair`**: A standing stair is a static game object in the game. It gets initialized with the a specific size (from the `Constants` file) and random color.
+            2. **`SpawnPoint`**: This class represents the point from where an individual player would spawn. Every player is passed an instance of this (thus having bits of a composition model on the `Player` class), initialized with a random x position and a fixed y position. 
+     2. **`DynamicGameObject`**: This is supposed to hold dynamic game objects. This holds extra variables for `velocity` and `acceleration`. This is extended by an abstract class:
+        1. **`MovingRectangle`**: This forms a base class for all the main components of my game - `Player` and `FallingStair`. They both have velocities and accelerations.
+            1. **`Player`**: This implements the `KeyPressUser` interface provided by the engine. It has a method called `handleKeyPress`. This method is being called for objects which are registered through the `Controller` class. Apart from that `Player` is the most important class in our game. This is the class which is controlled by the user. Obviously it has requisite implementations for the `updatePosition` and `draw` methods. Other than that, it has methods like `checkDeath` (checking whether the player has collided with a death zone) and so on. It is important to note that my `Player` is running using a state machine with the following states - `ON_GROUND`, `ON_STAIR` and `ON_AIR`. The states are self explanatory. 
+             2. **`FallingStair`**: This is another important concrete class in the game coming from the line of `DynamicGameObjects`. It has a rather basic implementation with a constant velocity being added to the position with time. Apart from that, it also has the ability to work as a `deathStair` which I will cover in a later section. 
+      3. **`UtilityGameObject`**: This extends `GameObject` and is meant for objects which are not meant to be probably drawn on the screen. Though `GameObject` provides color and size, this abstract class makes all of them transient, thus setting a contract that they are not intended to be used. There are two concrete children of this type of `GameObjects`. These two are used by the network component of the engine itself. When the engine gets a collection of data to send over the network, it encapsulates the stream of data between these two "dummy" `GameObjects`. 
+            1. **`NetworkStartTag`**: Apart from being the front part of the encapsulation, it also sends some meta information about the connection to the client, like what is the connection ID of their TCP connection. This helps the client(s) to build an efficient `ConcurrentHashMap` of other players in its own implementation.
+            2. **`NetworkEndTag`**: This forms the back part of the encapsulation.    
+        
+These three distinctions will help build any basic type of game objects and later on if needed, they can be extended and diversified to satisfy any kind of requirements. Moreover, the `UtilityGameObject` is in itself a kind of custom `GameObject` which can be used to build anything. Though `Controller` is not a part of the Game Object Model per se, it is still an important part of the architecture. This controller class gives the developers a customizable way to manage their own resources as well as having the affordance to register game objects and forget about calling their `updatePosition` and `draw` methods by themselves. The `Controller` is extended by `SimpleRaceManager` in my playground and is used to take care of sending data to the server and client and receiving data from the same. Other than that it has a `manage` method where the server keeps on spawning stairs and the client keeps on registering the recently updated player values from the server with the engine. This is a brief overview of my Game Object Model and a summary of my `Controller` class. The `Controller` class was detailed in the last assignment README and it has almost remained the same in structuring, so I thought it best not to explain it too expositorily here again.  
  
- 4. **Client**: `GameClient` is similar to `GameServer` except that the `Controller` exposes `sendDataFromClient`
-   and `getDataFromServer` for the game instance which runs as a client, to execute. Also, after the `MainEngine` creates the `GameClient`
-     instance, it tries to connect with the server. When it successfully does the same, it spawns two new threads for reading and writing from/to the server.
-     This client behavior can be registered by calling the `registerClient` method in the engine instance. 
-     This would ideally be done from `Controller` instance in the game. 
-     
-     
-Now, I will go over the individual sections and show how the simple playground uses these engine components
-and builds a multiplayer experience. 
-
-### Multithreading basics
-
-Before I go to the playground demonstrating my engine, I will cover this part separated-ly. I have 
-  kept this part isolated from the entire engine implementation because of its requirements. To run this part:
-  
-  1. Go to `[root_dir]\fork_example`.
-  2. Run `javac .\ForkExample[x].java`, where `[x]` is a number from `1` to `4`.
-  3. Run `java ForkExample[x]`. 
-  
-I will go through the individual changes one by one:
-
-1. **ForkExample1.java**: First have taken the two thread model and expanded it to an arbitrary number of threads to be spawned.
-Then I have implemented the producer-consumer model with the skeleton that had been provided. Till now, there is 
-no data structure that the producers and consumers work on really, but there is a producer which sleeps twice and wakes up and notifies 
-other consumer threads. For this change I experimented with the `notify` call. I put an extra sleep 
- before the consumer enters its `wait` such that the producer calls `notify` on any of them. 
- My test was to see whether `notify` calls get stored and are later delivered to anyone entering the monitor.
- But as it turns out, the first time that the producer notifies the thread there is no one to listen
- to that `notify` call and hence it goes to waste. The Java API does not deliver that `notify` call at a later stage. 
- Also as the producer exits, there is no one to notify the consumers any more and hence the program
- goes into a perpetual wait state at that point.
+### Multithreaded, Networked, Processing Sketch
  
-2. **ForkExample2.java**: For the second change, I have completed the producer consumer model with a data structure 
-  containing random numbers which get added by the producer and consumed (printed on the screen) by the consumer. All the consumers wait unless anybody is 
-   notifying them or if the array is empty. The producer on the other hand fills up the array, notifies some consumer and
-   goes to sleep. The consumer wakes up and consumes a number and notifies another thread waiting
-   in the monitor (it may be a producer or a consumer). This cycle continues. 
-
-3. **ForkExample3.java**: For this change, I removed all the synchronized blocks around the data structure. This was possible 
- because I have used `ConcurrentLinkedQueue`. I tried the program again and it gave the same output (only the consumer outputs are kept), thus 
- showing me that those data structures are synchronized at an API level. Moreover, there is no wait and notify and instead, 
- all the threads contest for production and consumption at the same time. This test, though not appropriate all the time (too much contention),
- will still work correctly.
+ I had completely implemented this in the last assignment. I will give a brief overview here one again for clarity. 
  
-4. **ForkExample4.java**: For this change, I did something interesting and introduced barriers into our producer consumer model
-using `CyclicBarrier` in Java. If you have noticed in the earlier outputs, there was only one thread which
-  woke up, consumed all the numbers and then went to sleep (because they could not get the lock for the data structure) and other threads went into starvation for 
-  that production iteration. Instead I introduced a barrier and tell every thread that it 
-  can only consume two numbers. Whenever it has finished consuming two numbers, it has to exit the consumption
-  loop and wait in a barrier. This barrier expects `NUM_THREADS` number of threads to hit it.
-  This gives a chance for other threads to consume it and hit the barrier too. Once they all hit the 
-  barrier, the cycle of production and consumption starts again. This is noticeable in the output as 
-  one thread consumes only two numbers, and you would be able to see numbers being consumed
-  by other threads. 
-
-### Networking Basics
-
-As mentioned before, the `GameServer` and `GameClient` are independent components of my engine.  
-  The process described in the homework specification is exactly how I have implemented this and 
-  I have explained in the earlier section. In brief, my `GameServer` listens for client connections in a new thread.
-   Each `GameClient` looks for the same server. When a connection is established, the both the server and
-    the client create new threads to read and write from/to each other. There is one minor difference though - 
-    the server keeps on looking for accepting connections using the `ServerSocket` instance that it has made. 
-    But the client, on the other hand only talks to one server at a time - so it does not need to keep
-    looking for more servers, i.e. it's `run` method (of the `Runnable` interface) exits after connecting to 
-    one server. As I will show later, the data transfer will be game objects, so my `GameObject` class also 
-    implements the `Serializable` instance. All this is done in the engine components, so the game 
-    developer doesn't need to worry about these. He just needs to take care of implementing the 
-    functions for getting and sending data to/from server/client(s). 
-      
-### Putting it all Together
- 
-In my playground, the server is not headless, i.e. the server also has a screen which renders a player 
-of its own (this is similar to games like Counter Strike where any one of the players in the 
-multiplayer environment becomes the server). This method may not be used by a game made using my 
-engine by simply registering game objects, which draw nothing on the screen (this can be turned on
-by a boolean flag while registering the game objects). 
-
-Anyway, coming back to the point, the job of my server is to generate the falling fallingStairs and send them
-as game objects across the network. The clients will receive them and render them on the screen. Thus all
-  the heavy-lifting of creating the environment is being done by my server. The clients receive this data and send their own 
-  (player) game object instances to the server. The server renders the players (squares) from the client side on the screen.
-   Initially I had done this as a synchronous system, i.e. the client and server have only one thread which is 
-   used to read and write. But later I changed this to an asynchronous behavior, so currently my program has no trace of a synchronous behavior,
-   which again is also not the ultimate goal of this assignment. 
+ As mentioned in the homework specification, my server sets up the scene for the clients to render. At first, it sends standing stairs which are static game objects to all the clients that it has connected to. The server has two threads for each client - `maintainClientReadConnection` and `maintainClientWriteConnection`. And it has another thread for accepting client connections. As the number of clients grow, the number of threads on the server grow as well. Each client on the other hand has only two network threads - `maintainServerReadConnection` and `maintainServerWriteConnection`. 
+    
+ The server has a "bag-of-tasks" approach in writing game objects into the outward data stream. The main game loop keeps adding new game objects to this bag and the server network thread keeps consuming them. When the bag becomes empty, the server `waits` on this queue. On the other hand, the server main game loop thread `notifies` when it fills up the queue. This is achieved by implementing all of this inside `synchronized` blocks around these queue references. This is an important reason why my game does not lag anymore. Previously, I was running the server thread in a `while true` loop, without any stop, which might not be very beneficial. Now, the server thread stops and sleeps when the bag of tasks is empty. 
    
-It's important to note the way I have sent and received the game objects. So whenever my `Controller`
-instance tells the server (or the client) to send something, it takes the list of game objects and appends a 
-`NetworkStartTag` and a `NetworkEndTag` at the beginning and the end. These are basically dummy game objects (which have a special boolean in them) 
-which are a sign for the other side that a game object stream will start or end. After appending these
- to the list of game objects that the game has given it, it sends all of the game objects one by one using the 
- `ObjectOutputStream.writeObject` method. This instance is again initialized using the value returned by the `Socket.getOutputStream`.
-  It calls `ObjectOutputStream.reset` after writing all game objects. This has to be done to avoid
-  bugs where the other side keeps receiving stale data. Similarly, the side reading the data uses `ObjectInputStream.readObject`. As soon
-  as it finds a start tag, it starts adding the following game objects in a list. It stops
-  building this list as soon as it finds an end tag. It then calls the respective method from the `Controller` instance
-  (`getDataFromServer` for a client game instance or `getDataFromClient` for a server game instance) and provides them with this list. If 
-   the instance of the running game is a server instance, it also sends a `connectionID` in the argument telling which client has sent this data.
-      
-### Asynchronicity!
+ The server then keeps adding each stair that is spawned in the queue, when they are spawned, and they are never repeated. The client receives them and as they all have constant velocities throughout, it does not need to get the stairs in every while loop. Instead, only the starting positions, velocities and colors would be enough for the clients to render the falling stairs or standing stair throughout their lifetime. 
+  
+ The client on the other hand sends its own location at every `while true` loop iteration because that cannot be rendered on its own without a location update at each instant by the clients. Still there is a `Thread.sleep(1)` to stop the `while true` loop momentarily at each iteration. This helps the OS to schedule efficiently. And it also contributes to the non-laggy performance of my game. 
+     
+  One more thing to note is that whenever a game object is received by the client, it registers that game object in the game object cluster (a list of queues of `GameObjects`) in my game engine. The engine later goes through this cluster one by one and calls `updatePosition` and `draw` for each `GameObject` in each queue in the cluster.   
 
-I have already explained how my server and client
-creates two threads as it accepts connections (one for reading and one for writing). In total there are 3 threads running for the client - 
-(1 for main game loop + 1 for reading data from server + 1 for writing data to server). For server, the number
-of threads depends of the number of connected clients. It can be represented as `1 + 2 * n`, where `n` is the number 
-of connected clients. The data received on each end is asynchronously made available to the game as there are 
- separate threads for these tasks. The main game loop (which keeps calling the `manage` method in the `Controller` instance) keeps updating the set of fallingStairs on the engine side (by calling `registerGameObjects`) with the 
-  one that is on the game application side. 
+### A 2D Platformer
+
+My 2D platformer is complete with static and dynamic platforms, controllable player, spawn points, death zones and scoring. 
+
+1. **Characters**: This is represented by the `Player` class. And as I had mentioned before, it is controlled by the user himself/herself by pressing `A`, `D` and `SPACEBAR`. 
+2. **Static Platforms**: This is represented by the `StandingStair` class. The player can jump on this and move on it. Collision detection detects whether the player has collided with this kind of platform or not. The collision response is to offset the player in the y direction to sit over the stair and keep the x position the same. 
+3. **Moving Platforms**: This is represented by the `FallingStair` class. The collision response and detection is same here like `StandingStair`. Other than that they keep coming from the top and disappear after they cross the bottom of the screen. All of the stairs have random colors and random velocities generated from the server adn sent to the clients. One thing to note is that when you start the program and see that on one client there are certain stairs which are not showing up on the other client, then this is because I rely on eventual consistency to extract as much efficiency as possible. Hence, my stairs are only sent when they are newly created. Thus if a stair was created before and sent to a certain client, it might so happen that the stair hasn't reached the bottom, but another client joined in, then it will not get the stair which is probably midway on the other client. This is how the game (playground) is architected. 
+4. **Spawn points**: These are hidden are their positions are randomly decided on the x axis by the `Controller` which spawns all of this and have a fixed y position, written in the `Constants.java` file. For each client there is only one spawn point. 
+5. **Death zones**: These are basically falling stairs which are not rendered on the screen. When a user steps on one, their outline is shown in red and that denotes that the user has fallen into a death zone. After this collision, the player is regenerated from a spawn point.
+6. **Scoring**: The scoring is done for each player and is shown on each client on the top right portion of the screen. The score is calculated based on the idea that hwo long can you stay on the top portion of the screen. Additionally, if you step on a platform you get points, so its better to keep jumping on a platform even if you can't reach the top. It's a minimalistic game, but with this scoring method, it becomes difficult to score and hence brings in challenge.
+  
+### Performance Comparison
+
+I have implemented the network code using two protocols - one where I send `GameObjects` after serializing them (I was doing this before only) and another where I convert the `GameObjects` to custom strings, send them across and parse them to create `GameObjects` again. To choose which protocol you want to choose, change the `stringProtocol` boolean value in the `EngineConstants.java` file. The rest will be taken care of by my code. 
  
- For synchronizing the data received from the game perspective, I use a `ConcurrentLinkedQueue` of `GameObject` instances. This is
-  because all my game objects are never accessed randomly. They are mostly used by my engine to call
-  their `updatePosition` and `drawShape` methods one by one. Making a `ConcurrentHashMap` does not make
-  sense in that respect. Moreover, when my game objects are registered with the engine, the `Controller` has to
-  pass an integer referencing the `gameObjectListID`. The engine internally maintains an `List` of `List` of `GameObject` instances. This
-  allows the `Controller` to set a list of `GameObject` instances at a certain position of this game object cluster
-   at once (like the client setting the list of fallingStairs that it receives from the server, in the engine).
-   It should be also noted that all the game objects that are sent are of `Serializable` nature.
-    It any game specific class extends the `Gameobject` class and adds its own variables, the developer (like
-    me in my playground) should make sure that the ones which are not required to be sent over the network, 
-    be marked `transient`, as I have done with certain class variables in `FallingStair` and `Player`. 
-
+In the first method, I take care in tagging the unnecessary objects as `transient` so that they don't get sent over the server. So when Java serializes them, it excludes all of those variables and everything works as expected. I did not need to use `writeReplace` or `readResolve` because of the way I have architected the code. In case of strings, I take the `GameObject` just before sending over the stream and put the name of the class delimited with ":" along with all the important variables that I would need on the other side to inflate it back. On the other side, I split the string, and extract all the information and use that information to form the `GameObjects` back to normalcy. 
+ 
+My metric calculation code is present on `SimpleRaceManager` and `GameServer` classes, so I have taken them separately and put them in the `tests` folder in the root directory. This is because metric calculation does not make sense in the main branch and will be better if organized into a different folder. To run them, just copy and replace these three files in the actual code and build it again. 
+ 
+In the specification it asks to calculate the time taken for 1000 game loop iterations. But having separate threads for networking and game loop, it made sense to change the metric a little but to have more effect on the actual networking protocol used. So what I did was use three configurations:
+ 1. Send 5000 game objects from the server to the clients - velocity of stairs range from 0.5 to 1.3 - averages a maximum of 10 objects moving on the screen at one instant:
+    1. 2 clients: I measured the start time from when the network starts sending the objects and the end time when the clients have completely rendered all of those objects. 
+        1. String protocol - Took 60.174 seconds.
+        2. Game Object protocol - Took 66.76 seconds.
+    2. 3 clients: 
+        1. String protocol - Took 49.331 seconds.
+        2. Game Object protocol - Took 48.51 seconds.
+2. Send 15000 game objects from the server to the clients - velocity of stairs range from 0.1 to 0.3 - averages a maximum of 100 objects moving on the screen at one instant:
+    1. 2 clients: I measured the start time from when the network starts sending the objects and the end time when the clients have completely rendered all of those objects. 
+        1. String protocol - Took 246.89 seconds.
+        2. Game Object protocol - Took 270.01 seconds.
+    2. 3 clients: 
+        1. String protocol - Took 212.48 seconds.
+        2. Game Object protocol - Took 201.252 seconds.
+3. Send 15000 game objects from the server to the clients - velocity of stairs range from 0.1 to 0.3 - averages a maximum of 500 objects moving on the screen at one instant:
+    1. 2 clients: I measured the start time from when the network starts sending the objects and the end time when the clients have completely rendered all of those objects. 
+        1. String protocol - Took 265.98 seconds.
+        2. Game Object protocol - Took 259.223 seconds.
+    2. 3 clients: 
+        1. String protocol - Took 231.8 seconds.
+        2. Game Object protocol - Took 228.83 seconds.
+        
+If you want the raw results with timestamps, they are in the `tests` folder. These results give some interesting insights. String protocol would seem cheaper on the network and that shows in the initial results. But as the number of clients increases, the game object protocol seems to do a much better job. In the end, for the 500 game objects on screen, the game object protocol completely outperforms the string protocol in both 2 and 3 client cases. This probably is due to the fact that string protocol probably might give you a cheaper network overload, but ultimately from a game engine perspective you need to convert them to `GameObjects` and that is where the string protocol loses, because apparently, from the results, Java itself does a much better job of serializing and de-serializing that me makings string from game objects and parsing and creating game objects from strings.
+  
 ### Appendix
 
-**Client screen purple square represents player**
+**Three clients**
 
-![](screenshots/client.png?raw=true)
+![](../screenshots/hw2_three_clients.png?raw=true)
 
-**Server screen with 1 client (blue -> server, purple -> client)**
+**Death stair shown in red outline**
 
-![](screenshots/server_1_client.png?raw=true)
-
-**Server screen with 2 clients (blue -> server, purple, green -> client)**
-
-![](screenshots/server_2_clients.png?raw=true)
+![](../screenshots/hw2_one_client_death_zone.png?raw=true)
 

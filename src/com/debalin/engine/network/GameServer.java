@@ -8,11 +8,7 @@ import com.debalin.engine.game_objects.NetworkStartTag;
 
 import java.net.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 
 public class GameServer implements Runnable {
 
@@ -64,9 +60,13 @@ public class GameServer implements Runnable {
     while (true) {
       while (true) {
         try {
-          GameObject gameObject = (GameObject) in.readObject();
+          GameObject gameObject;
+          if (EngineConstants.stringProtocol)
+            gameObject = GameObjectAndStringConverter.convertStringToGameObject((String)in.readObject(), controller);
+          else
+            gameObject = (GameObject) in.readObject();
           if (gameObject.tag == GameServer.NetworkTag.START_TAG) {
-            gameObjects = new ConcurrentLinkedQueue<>();
+            gameObjects = new LinkedList<>();
           } else if (gameObject.tag == GameServer.NetworkTag.OBJECT) {
             gameObjects.add(gameObject);
           } else if (gameObject.tag == GameServer.NetworkTag.END_TAG) {
@@ -105,13 +105,23 @@ public class GameServer implements Runnable {
       try {
         synchronized (writeQueue) {
           GameObject startObject = new NetworkStartTag(connectionID);
-          out.writeObject(startObject);
+          if (EngineConstants.stringProtocol)
+            out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(startObject));
+          else
+            out.writeObject(startObject);
 
-          while (!writeQueue.isEmpty())
-            out.writeObject(writeQueue.poll());
+          while (!writeQueue.isEmpty()) {
+            if (EngineConstants.stringProtocol)
+              out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(writeQueue.poll()));
+            else
+              out.writeObject(writeQueue.poll());
+          }
 
           GameObject endObject = new NetworkEndTag();
-          out.writeObject(endObject);
+          if (EngineConstants.stringProtocol)
+            out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(endObject));
+          else
+            out.writeObject(endObject);
           out.reset();
 
           while (writeQueue.isEmpty())
