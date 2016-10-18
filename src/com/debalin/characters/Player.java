@@ -91,6 +91,7 @@ public class Player extends MovingRectangle implements KeypressUser {
       if (((FallingStair) collidedStair).isDeathStair) {
         System.out.println("Player is dead.");
         score -= 20;
+        ((FallingStair) collidedStair).setKilledPlayer(true);
         regenerate();
       }
     }

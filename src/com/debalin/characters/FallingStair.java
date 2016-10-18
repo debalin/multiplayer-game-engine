@@ -7,6 +7,11 @@ import processing.core.PVector;
 public class FallingStair extends MovingRectangle {
 
   protected boolean isDeathStair = false;
+  protected transient boolean killedPlayer = false;
+
+  public void setKilledPlayer(boolean killedPlayer) {
+    this.killedPlayer = killedPlayer;
+  }
 
   public FallingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition) {
     super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, new PVector(0, engine.random(Constants.FALLING_STAIR_MAX_VEL_Y)), Constants.FALLING_STAIR_INIT_ACC, engine);
@@ -29,14 +34,18 @@ public class FallingStair extends MovingRectangle {
   @Override
   public void drawShape() {
     engine.pushMatrix();
-    engine.noStroke();
 
-    engine.fill(color.x, color.y, color.z);
-    engine.rect(position.x, position.y, size.x, size.y);
-
-    engine.fill(Constants.DEATH_STAIR_CIRCLE_COLOR.x, Constants.DEATH_STAIR_CIRCLE_COLOR.y, Constants.DEATH_STAIR_CIRCLE_COLOR.z);
-    if (isDeathStair) {
-      engine.ellipse(position.x + size.x / 2, position.y - Constants.DEATH_STAIR_CIRCLE_OFFSET, Constants.DEATH_STAIR_CIRCLE_RADIUS, Constants.DEATH_STAIR_CIRCLE_RADIUS);
+    if (!isDeathStair) {
+      engine.noStroke();
+      engine.fill(color.x, color.y, color.z);
+      engine.rect(position.x, position.y, size.x, size.y);
+    }
+    else {
+      if (killedPlayer) {
+        engine.noFill();
+        engine.stroke(255, 0, 0);
+        engine.rect(position.x, position.y, size.x, size.y);
+      }
     }
 
     engine.popMatrix();
