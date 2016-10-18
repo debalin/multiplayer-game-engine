@@ -23,7 +23,7 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
   public SpawnPoint playerSpawnPoint;
   public Map<Integer, GameObject> otherPlayers;
   public Queue<GameObject> fallingStairs;
-  public Queue<GameObject> standingStairs;
+  public List<GameObject> standingStairs;
   public boolean serverMode;
   public GameServer gameServer;
   public GameClient gameClient;
@@ -33,20 +33,20 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
   private int otherPlayersObjectID;
   private int playerObjectID;
 
-  private int clientConnectionID;
-  private Set<Integer> connectionIDs;
+  private Integer clientConnectionID;
+  Map<Integer, Queue<GameObject>> fromServerWriteQueues;
 
   DecimalFormat dateFormat;
 
   public SimpleRaceManager(boolean serverMode) {
     this.serverMode = serverMode;
     fallingStairs = new ConcurrentLinkedQueue<>();
-    standingStairs = new ConcurrentLinkedQueue<>();
+    standingStairs = new LinkedList<>();
     otherPlayers = new ConcurrentHashMap<>();
     fallingStairsObjectID = standingStairsObjectID = otherPlayersObjectID = playerObjectID = -1;
 
     clientConnectionID = -1;
-    connectionIDs = new HashSet<>();
+    fromServerWriteQueues = new HashMap<>();
 
     dateFormat = new DecimalFormat();
     dateFormat.setMaximumFractionDigits(2);
@@ -98,54 +98,58 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
 
   private void registerPlayer() {
     System.out.println("Registering Player.");
-
-    if (playerObjectID == -1)
-      playerObjectID = engine.registerGameObject(player, playerObjectID, true);
-    else
-      engine.registerGameObject(player, playerObjectID, true);
+    playerObjectID = engine.registerGameObject(player, playerObjectID, true);
   }
 
   public Queue<GameObject> sendDataFromServer(int connectionID) {
-    Queue<GameObject> dataToSend = new ConcurrentLinkedQueue<>();
-    dataToSend.addAll(fallingStairs);
-    dataToSend.addAll(otherPlayers.values());
-    if (!connectionIDs.contains(connectionID)) {
-      dataToSend.addAll(standingStairs);
-      connectionIDs.add(connectionID);
+    if (fromServerWriteQueues.get(connectionID) == null) {
+      Queue<GameObject> fromServerWriteQueue = new LinkedList<>();
+      synchronized(fromServerWriteQueues) {
+        fromServerWriteQueues.put(connectionID, fromServerWriteQueue);
+        synchronized (fromServerWriteQueue) {
+          fromServerWriteQueue.addAll(standingStairs);
+        }
+      }
     }
 
-    return dataToSend;
+    return fromServerWriteQueues.get(connectionID);
   }
 
   public void getDataFromServer(Queue<GameObject> gameObjects, int connectionID) {
-    clientConnectionID = connectionID;
+    synchronized (clientConnectionID) {
+      clientConnectionID = connectionID;
+    }
 
-    fallingStairs.clear();
-
-    int i = 0;
     for (GameObject gameObject : gameObjects) {
       if (gameObject.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
         ((FallingStair) gameObject).engine = engine;
         fallingStairs.add(gameObject);
+        fallingStairsObjectID = engine.registerGameObject(gameObject, fallingStairsObjectID, true);
       }
       else if (gameObject.getClass().getTypeName().equals(StandingStair.class.getTypeName())) {
         ((StandingStair) gameObject).engine = engine;
         standingStairs.add(gameObject);
+        standingStairsObjectID = engine.registerGameObject(gameObject, standingStairsObjectID, false);
       }
       else {
         Player player = (Player) gameObject;
         player.engine = engine;
-        int playerIndex = i - fallingStairs.size();
+        int playerIndex = player.getConnectionID();
 
-        if (playerIndex != connectionID)
+        if (playerIndex != connectionID) {
           otherPlayers.put(playerIndex, player);
+        }
       }
-      i++;
     }
   }
 
   public Queue<GameObject> sendDataFromClient() {
-    Queue<GameObject> dataToSend = new ConcurrentLinkedQueue<>();
+    Queue<GameObject> dataToSend = new LinkedList<>();
+    synchronized (clientConnectionID) {
+      if (clientConnectionID == -1)
+        return null;
+      player.setConnectionID(clientConnectionID);
+    }
     dataToSend.add(player);
     return dataToSend;
   }
@@ -187,12 +191,7 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
       StandingStair stair = new StandingStair(engine, stairColor, stairInitPosition);
 
       standingStairs.add(stair);
-
-      if (standingStairsObjectID == -1) {
-        standingStairsObjectID = engine.registerGameObject(stair, standingStairsObjectID, false);
-      } else {
-        engine.registerGameObject(stair, standingStairsObjectID, false);
-      }
+      standingStairsObjectID = engine.registerGameObject(stair, standingStairsObjectID, false);
     }
   }
 
@@ -211,56 +210,33 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
       if (engine.frameCount % Constants.FALLING_STAIR_SPAWN_INTERVAL == 0) {
         spawnFallingStair();
       }
-      removeStairs();
+      synchronized (fromServerWriteQueues) {
+        for (Queue<GameObject> fromServerWriteQueue : fromServerWriteQueues.values()) {
+          synchronized (fromServerWriteQueue) {
+            fromServerWriteQueue.addAll(otherPlayers.values());
+            fromServerWriteQueue.notify();
+          }
+        }
+      }
     }
     else {
-      registerFallingStairsForClient();
-      registerStandingStairsForClient();
+      registerOtherPlayers();
     }
-
-    registerOtherPlayers();
+    removeStairs();
   }
 
   private void registerOtherPlayers() {
     if (otherPlayers.size() > 0) {
-      if (otherPlayersObjectID == -1) {
-        otherPlayersObjectID = engine.registerGameObjects((new ArrayList<>(otherPlayers.values())), otherPlayersObjectID, false);
-      } else {
-        engine.registerGameObjects((new ArrayList<>(otherPlayers.values())), otherPlayersObjectID, false);
-      }
-    }
-  }
-
-  private void registerFallingStairsForClient() {
-    List<GameObject> gameObjects = new LinkedList<>();
-    gameObjects.addAll(fallingStairs);
-
-    if (fallingStairsObjectID == -1) {
-      fallingStairsObjectID = engine.registerGameObjects(gameObjects, fallingStairsObjectID, false);
-    }
-    else {
-      engine.registerGameObjects(gameObjects, fallingStairsObjectID, false);
-    }
-  }
-
-  private void registerStandingStairsForClient() {
-    if (standingStairsObjectID == -1 && standingStairs.size() > 0) {
-      System.out.println("Registering standing stairs for once.");
-      List<GameObject> gameObjects = new LinkedList<>();
-      gameObjects.addAll(standingStairs);
-
-      standingStairsObjectID = engine.registerGameObjects(gameObjects, standingStairsObjectID, false);
+      otherPlayersObjectID = engine.registerGameObjects((new LinkedList<>(otherPlayers.values())), otherPlayersObjectID, false);
     }
   }
 
   private void removeStairs() {
-    synchronized (fallingStairs) {
-      Iterator<GameObject> i = fallingStairs.iterator();
-      while (i.hasNext()) {
-        FallingStair stair = (FallingStair) i.next();
-        if (!stair.isVisible())
-          i.remove();
-      }
+    Iterator<GameObject> i = fallingStairs.iterator();
+    while (i.hasNext()) {
+      FallingStair stair = (FallingStair) i.next();
+      if (!stair.isVisible())
+        i.remove();
     }
   }
 
@@ -270,13 +246,16 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
     FallingStair stair = new FallingStair(engine, stairColor, stairInitPosition);
 
     fallingStairs.add(stair);
+    synchronized (fromServerWriteQueues) {
+      for (Queue<GameObject> fromServerWriteQueue : fromServerWriteQueues.values()) {
+        synchronized (fromServerWriteQueue) {
+          fromServerWriteQueue.add(stair);
+          fromServerWriteQueue.notify();
+        }
+      }
+    }
 
-    if (fallingStairsObjectID == -1) {
-      fallingStairsObjectID = engine.registerGameObject(stair, fallingStairsObjectID, true);
-    }
-    else {
-      engine.registerGameObject(stair, fallingStairsObjectID, true);
-    }
+    fallingStairsObjectID = engine.registerGameObject(stair, fallingStairsObjectID, true);
   }
 
   private void registerKeypressUsers() {

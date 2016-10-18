@@ -9,6 +9,7 @@ import com.debalin.engine.game_objects.NetworkStartTag;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -58,7 +59,7 @@ public class GameServer implements Runnable {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    Queue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
+    Queue<GameObject> gameObjects = new LinkedList<>();
 
     while (true) {
       while (true) {
@@ -98,23 +99,32 @@ public class GameServer implements Runnable {
       e.printStackTrace();
     }
 
+    Queue<GameObject> writeQueue = controller.sendDataFromServer(connectionID);
+
     while (true) {
       try {
-        Queue<GameObject> dataToSend = controller.sendDataFromServer(connectionID);
-        GameObject startObject = new NetworkStartTag(connectionID);
-        out.writeObject(startObject);
+        synchronized (writeQueue) {
+          GameObject startObject = new NetworkStartTag(connectionID);
+          out.writeObject(startObject);
 
-        for (GameObject object : dataToSend)
-          out.writeObject(object);
+          while (!writeQueue.isEmpty())
+            out.writeObject(writeQueue.poll());
 
-        GameObject endObject = new NetworkEndTag();
-        out.writeObject(endObject);
-        out.reset();
+          GameObject endObject = new NetworkEndTag();
+          out.writeObject(endObject);
+          out.reset();
+
+          while (writeQueue.isEmpty())
+            writeQueue.wait();
+        }
       } catch (IOException e) {
         if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
           System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server write thread.");
           return;
         }
+      }
+      catch (InterruptedException e) {
+        System.out.println("Some issue in writeQueue.");
       }
     }
   }

@@ -10,7 +10,6 @@ public class NetworkStartTag extends UtilityGameObject {
   }
 
   public void updatePosition() {}
-
   public void drawShape() {}
 
 }

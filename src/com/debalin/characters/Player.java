@@ -9,6 +9,7 @@ import com.debalin.util.Collision;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 
@@ -16,7 +17,7 @@ public class Player extends MovingRectangle implements KeypressUser {
 
   private transient boolean LEFT, RIGHT, JUMP;
   private transient Queue<GameObject> fallingStairs;
-  private transient Queue<GameObject> standingStairs;
+  private transient List<GameObject> standingStairs;
   private transient GameObject collidedStair;
   private transient States state;
   private boolean VISIBLE;
@@ -26,15 +27,25 @@ public class Player extends MovingRectangle implements KeypressUser {
 
   private transient SpawnPoint spawnPoint;
 
+  private int connectionID;
+
   private enum States {
     ON_GROUND, ON_STAIR, ON_AIR
+  }
+
+  public void setConnectionID(int connectionID) {
+    this.connectionID = connectionID;
+  }
+
+  public int getConnectionID() {
+    return connectionID;
   }
 
   public boolean isVisible() {
     return VISIBLE;
   }
 
-  public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, Queue<GameObject> standingStairs) {
+  public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, List<GameObject> standingStairs) {
     super(Constants.PLAYER_COLOR, spawnPoint.getPosition(), Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_MAX_ACC, engine);
     color = (new PVector(random.nextInt(255), random.nextInt(255), random.nextInt(255))).copy();
     this.fallingStairs = fallingStairs;
@@ -56,8 +67,8 @@ public class Player extends MovingRectangle implements KeypressUser {
         checkBounds();
         break;
       case ON_STAIR:
-        isStillOnStair();
         checkDeath();
+        isStillOnStair();
         break;
     }
 
@@ -134,6 +145,7 @@ public class Player extends MovingRectangle implements KeypressUser {
       changeState(States.ON_STAIR);
       collidedStair = stair;
       score += 10;
+      return;
     });
 
     standingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
@@ -145,6 +157,7 @@ public class Player extends MovingRectangle implements KeypressUser {
       changeState(States.ON_STAIR);
       collidedStair = stair;
       score += 7;
+      return;
     });
   }
 

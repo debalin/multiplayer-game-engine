@@ -18,7 +18,6 @@ public abstract class GameObject implements Serializable {
   public PVector getPosition() {
     return position;
   }
-
   public PVector getSize() {
     return size;
   }

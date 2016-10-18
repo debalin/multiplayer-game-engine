@@ -8,6 +8,7 @@ import com.debalin.engine.game_objects.NetworkStartTag;
 
 import java.net.*;
 import java.io.*;
+import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -38,7 +39,7 @@ public class GameClient implements Runnable {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    Queue<GameObject> gameObjects = new ConcurrentLinkedQueue<>();
+    Queue<GameObject> gameObjects = new LinkedList<>();
 
     int connectionID = -1;
     while (true) {
@@ -83,6 +84,9 @@ public class GameClient implements Runnable {
     while (true) {
       try {
         Queue<GameObject> dataToSend = controller.sendDataFromClient();
+
+        if (dataToSend == null)
+          continue;
         GameObject startObject = new NetworkStartTag(-1);
         out.writeObject(startObject);
 
@@ -92,12 +96,14 @@ public class GameClient implements Runnable {
         GameObject endObject = new NetworkEndTag();
         out.writeObject(endObject);
         out.reset();
+        Thread.sleep(1);
       } catch (IOException e) {
         if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
           System.out.println("Connection lost with server, will stop client write thread.");
           return;
         }
       }
+      catch (InterruptedException e) {}
     }
   }
 

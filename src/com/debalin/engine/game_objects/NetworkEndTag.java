@@ -9,7 +9,6 @@ public class NetworkEndTag extends UtilityGameObject {
   }
 
   public void updatePosition() {}
-
   public void drawShape() {}
 
 }

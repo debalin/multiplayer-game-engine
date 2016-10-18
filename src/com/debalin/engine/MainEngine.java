@@ -7,28 +7,24 @@ import com.debalin.engine.network.GameServer;
 import com.debalin.engine.util.TextRenderer;
 import processing.core.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MainEngine extends PApplet {
 
-  public List<List<GameObject>> gameObjectsCluster;
+  public List<Queue<GameObject>> gameObjectsCluster;
   public List<KeypressUser> keypressUsers;
   public List<TextRenderer> textRenderers;
   public static Controller controller;
   public GameServer gameServer;
   public GameClient gameClient;
+  public List<Boolean> updateOrNotArray;
+  public static boolean serverMode;
 
   public static PVector clientResolution;
   public static PVector serverResolution;
   public static PVector backgroundRGB;
   public static int smoothFactor;
-
-  public List<Boolean> updateOrNotArray;
-
-  public static boolean serverMode;
 
   public MainEngine() {
     gameObjectsCluster = new ArrayList<>();
@@ -38,12 +34,15 @@ public class MainEngine extends PApplet {
   }
 
   public int registerGameObject(GameObject gameObject, int gameObjectListID, boolean update) {
-    if (gameObjectListID == -1) {
-      gameObjectListID = gameObjectsCluster.size();
-      gameObjectsCluster.add(new LinkedList<>());
-      updateOrNotArray.add(update);
+    synchronized (gameObjectsCluster) {
+      if (gameObjectListID == -1) {
+        gameObjectListID = gameObjectsCluster.size();
+        gameObjectsCluster.add(new ConcurrentLinkedQueue<>());
+        updateOrNotArray.add(update);
+      }
+      gameObjectsCluster.get(gameObjectListID).add(gameObject);
     }
-    gameObjectsCluster.get(gameObjectListID).add(gameObject);
+
     return gameObjectListID;
   }
 
@@ -116,36 +115,43 @@ public class MainEngine extends PApplet {
     }
   }
 
-  public void updatePositions() {
+  private void updatePositions() {
     int count = 0;
-    for (List<GameObject> gameObjects : gameObjectsCluster) {
-      if (updateOrNotArray.get(count)) {
-        Iterator<GameObject> i = gameObjects.iterator();
-        while (i.hasNext()) {
-          GameObject gameObject = i.next();
-          if (!gameObject.isVisible()) {
-            i.remove();
-          } else {
-            gameObject.updatePosition();
+    synchronized (gameObjectsCluster) {
+      for (Queue<GameObject> gameObjects : gameObjectsCluster) {
+        if (updateOrNotArray.get(count)) {
+          Iterator<GameObject> i = gameObjects.iterator();
+          while (i.hasNext()) {
+            GameObject gameObject = i.next();
+            if (!gameObject.isVisible()) {
+              i.remove();
+            } else {
+              gameObject.updatePosition();
+            }
           }
         }
+        count++;
       }
-      count++;
     }
   }
 
-  public int registerGameObjects(List<GameObject> gameObjects, int gameObjectListID, boolean update) {
-    if (gameObjectListID == -1) {
-      gameObjectListID = gameObjectsCluster.size();
-      gameObjectsCluster.add(new LinkedList<>());
-      updateOrNotArray.add(update);
+  public int registerGameObjects(Queue<GameObject> gameObjects, int gameObjectListID, boolean update) {
+    synchronized (gameObjectsCluster) {
+      if (gameObjectListID == -1) {
+        gameObjectListID = gameObjectsCluster.size();
+        gameObjectsCluster.add(new ConcurrentLinkedQueue<>());
+        updateOrNotArray.add(update);
+      }
+      gameObjectsCluster.set(gameObjectListID, gameObjects);
     }
-    gameObjectsCluster.set(gameObjectListID, gameObjects);
+
     return gameObjectListID;
   }
 
-  public void drawShapes() {
-    gameObjectsCluster.forEach(gameObjects -> gameObjects.forEach(GameObject::drawShape));
+  private void drawShapes() {
+    synchronized (gameObjectsCluster) {
+      gameObjectsCluster.forEach(gameObjects -> gameObjects.forEach(GameObject::drawShape));
+    }
   }
 
   public void keyPressed() {
