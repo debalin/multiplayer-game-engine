@@ -20,14 +20,12 @@ public class Constants {
 
   public static final float FALLING_STAIR_START_Y = -20;
   public static final PVector FALLING_STAIR_SIZE = new PVector(80, 10);
+  public static final float FALLING_STAIR_MIN_VEL_Y = 0.5f;
   public static final float FALLING_STAIR_MAX_VEL_Y = 1.6f;
   public static final int FALLING_STAIR_SPAWN_INTERVAL = 280;
   public static final int STAIR_PADDING_X = 10;
   public static final PVector FALLING_STAIR_INIT_ACC = new PVector(0, 0);
-  public static final float DEATH_STAIR_PROBABILITY = 0.7f;
-  public static final float DEATH_STAIR_CIRCLE_OFFSET = 20f;
-  public static final float DEATH_STAIR_CIRCLE_RADIUS = 15f;
-  public static final PVector DEATH_STAIR_CIRCLE_COLOR = new PVector(255, 0, 0);
+  public static final float DEATH_STAIR_PROBABILITY = 0.8f;
 
   public static final PVector STANDING_STAIR_SIZE = new PVector(100, 10);
   public static final int STANDING_STAIR_COUNT = 3;

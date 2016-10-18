@@ -20,21 +20,14 @@ public class Player extends MovingRectangle implements KeypressUser {
   private transient List<GameObject> standingStairs;
   private transient GameObject collidedStair;
   private transient States state;
-  private boolean VISIBLE;
   private float score = 100;
   private transient PVector averagePosition = new PVector(0, 0);
   private transient Random random = new Random();
 
   private transient SpawnPoint spawnPoint;
 
-  private int connectionID;
-
   private enum States {
     ON_GROUND, ON_STAIR, ON_AIR
-  }
-
-  public void setConnectionID(int connectionID) {
-    this.connectionID = connectionID;
   }
 
   public int getConnectionID() {
@@ -42,7 +35,14 @@ public class Player extends MovingRectangle implements KeypressUser {
   }
 
   public boolean isVisible() {
-    return VISIBLE;
+    return visible;
+  }
+
+  public void setScore(float score) {
+    this.score = score;
+  }
+  public void setConnectionID(int connectionID) {
+    this.connectionID = connectionID;
   }
 
   public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, List<GameObject> standingStairs) {
@@ -52,7 +52,7 @@ public class Player extends MovingRectangle implements KeypressUser {
     this.standingStairs = standingStairs;
     LEFT = RIGHT = JUMP = false;
     state = States.ON_AIR;
-    VISIBLE = true;
+    visible = true;
 
     this.spawnPoint = spawnPoint;
   }
