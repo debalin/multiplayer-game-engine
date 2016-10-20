@@ -2,7 +2,7 @@
   <artifact type="jar" name="CSC591_GE_HW1:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/CSC591_GE_HW1.jar</output-path>
     <root id="archive" name="CSC591_GE_HW1.jar">
-      <element id="module-output" name="CSC591_GE_HW1" />
+      <element id="module-output" name="multiplayer-game-emgine" />
       <element id="library" level="project" name="core" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/core.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/jogl-all.jar" path-in-jar="/" />
