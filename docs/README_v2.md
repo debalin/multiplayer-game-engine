@@ -45,7 +45,7 @@ I looked into all possible cases that I can use for building my Game Object Mode
      2. **`DynamicGameObject`**: This is supposed to hold dynamic game objects. This holds extra variables for `velocity` and `acceleration`. This is extended by an abstract class:
         1. **`MovingRectangle`**: This forms a base class for all the main components of my game - `Player` and `FallingStair`. They both have velocities and accelerations.
             1. **`Player`**: This implements the `KeyPressUser` interface provided by the engine. It has a method called `handleKeyPress`. This method is being called for objects which are registered through the `Controller` class. Apart from that `Player` is the most important class in our game. This is the class which is controlled by the user. Obviously it has requisite implementations for the `updatePosition` and `draw` methods. Other than that, it has methods like `checkDeath` (checking whether the player has collided with a death zone) and so on. It is important to note that my `Player` is running using a state machine with the following states - `ON_GROUND`, `ON_STAIR` and `ON_AIR`. The states are self explanatory. 
-             2. **`FallingStair`**: This is another important concrete class in the game coming from the line of `DynamicGameObjects`. It has a rather basic implementation with a constant velocity being added to the position with time. Apart from that, it also has the ability to work as a `deathStair` which I will cover in a later section. 
+            2. **`FallingStair`**: This is another important concrete class in the game coming from the line of `DynamicGameObjects`. It has a rather basic implementation with a constant velocity being added to the position with time. Apart from that, it also has the ability to work as a `deathStair` which I will cover in a later section. 
       3. **`UtilityGameObject`**: This extends `GameObject` and is meant for objects which are not meant to be probably drawn on the screen. Though `GameObject` provides color and size, this abstract class makes all of them transient, thus setting a contract that they are not intended to be used. There are two concrete children of this type of `GameObjects`. These two are used by the network component of the engine itself. When the engine gets a collection of data to send over the network, it encapsulates the stream of data between these two "dummy" `GameObjects`. 
             1. **`NetworkStartTag`**: Apart from being the front part of the encapsulation, it also sends some meta information about the connection to the client, like what is the connection ID of their TCP connection. This helps the client(s) to build an efficient `ConcurrentHashMap` of other players in its own implementation.
             2. **`NetworkEndTag`**: This forms the back part of the encapsulation.    
@@ -93,14 +93,14 @@ In the specification it asks to calculate the time taken for 1000 game loop iter
     2. 3 clients: 
         1. String protocol - Took 49.331 seconds.
         2. Game Object protocol - Took 48.51 seconds.
-2. Send 15000 game objects from the server to the clients - velocity of stairs range from 0.1 to 0.3 - averages a maximum of 100 objects moving on the screen at one instant:
+ 2. Send 15000 game objects from the server to the clients - velocity of stairs range from 0.1 to 0.3 - averages a maximum of 100 objects moving on the screen at one instant:
     1. 2 clients: I measured the start time from when the network starts sending the objects and the end time when the clients have completely rendered all of those objects. 
         1. String protocol - Took 246.89 seconds.
         2. Game Object protocol - Took 270.01 seconds.
     2. 3 clients: 
         1. String protocol - Took 212.48 seconds.
         2. Game Object protocol - Took 201.252 seconds.
-3. Send 15000 game objects from the server to the clients - velocity of stairs range from 0.1 to 0.3 - averages a maximum of 500 objects moving on the screen at one instant:
+ 3. Send 15000 game objects from the server to the clients - velocity of stairs range from 0.1 to 0.3 - averages a maximum of 500 objects moving on the screen at one instant:
     1. 2 clients: I measured the start time from when the network starts sending the objects and the end time when the clients have completely rendered all of those objects. 
         1. String protocol - Took 265.98 seconds.
         2. Game Object protocol - Took 259.223 seconds.
