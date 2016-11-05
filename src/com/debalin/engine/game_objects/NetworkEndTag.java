@@ -8,7 +8,7 @@ public class NetworkEndTag extends UtilityGameObject {
     tag = GameServer.NetworkTag.END_TAG;
   }
 
-  public void updatePosition() {}
-  public void drawShape() {}
+  public void update() {}
+  public void draw() {}
 
 }

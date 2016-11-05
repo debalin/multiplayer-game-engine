@@ -16,9 +16,7 @@ public abstract class NonMovingRectangle extends StaticGameObject {
     this.engine = engine;
   }
 
-  public abstract void updatePosition();
-
-  public void drawShape() {
+  public void draw() {
     engine.pushMatrix();
     engine.fill(color.x, color.y, color.z);
     engine.noStroke();

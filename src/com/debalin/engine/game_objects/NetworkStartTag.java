@@ -9,7 +9,7 @@ public class NetworkStartTag extends UtilityGameObject {
     this.connectionID = connectionID;
   }
 
-  public void updatePosition() {}
-  public void drawShape() {}
+  public void update() {}
+  public void draw() {}
 
 }

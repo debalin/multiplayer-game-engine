@@ -26,7 +26,7 @@ public class FallingStair extends MovingRectangle {
       isDeathStair = true;
   }
 
-  public void updatePosition() {
+  public void update() {
     position.add(velocity);
     checkBounds();
   }
@@ -37,7 +37,7 @@ public class FallingStair extends MovingRectangle {
   }
 
   @Override
-  public void drawShape() {
+  public void draw() {
     engine.pushMatrix();
 
     if (!isDeathStair) {

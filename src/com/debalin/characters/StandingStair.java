@@ -11,6 +11,4 @@ public class StandingStair extends NonMovingRectangle {
     visible = true;
   }
 
-  public void updatePosition() {};
-
 }

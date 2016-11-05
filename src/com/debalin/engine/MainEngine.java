@@ -4,6 +4,7 @@ import com.debalin.engine.events.KeypressUser;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
 import com.debalin.engine.network.GameServer;
+import com.debalin.engine.timeline.Timeline;
 import com.debalin.engine.util.TextRenderer;
 import processing.core.*;
 
@@ -26,6 +27,8 @@ public class MainEngine extends PApplet {
   public static PVector backgroundRGB;
   public static int smoothFactor;
 
+  public Timeline realTimelineInMillis, gameTimelineInMillis, gameTimelineInFrames;
+
   public MainEngine() {
     gameObjectsCluster = new ArrayList<>();
     keypressUsers = new LinkedList<>();
@@ -37,7 +40,7 @@ public class MainEngine extends PApplet {
     synchronized (gameObjectsCluster) {
       if (gameObjectListID == -1) {
         gameObjectListID = gameObjectsCluster.size();
-        gameObjectsCluster.add(new ConcurrentLinkedQueue<>());
+        gameObjectsCluster.add(new LinkedList<>());
         updateOrNotArray.add(update);
       }
       gameObjectsCluster.get(gameObjectListID).add(gameObject);
@@ -83,6 +86,20 @@ public class MainEngine extends PApplet {
   public void setup() {
     controller.setEngine(this);
     startServers();
+    startTimelines();
+  }
+
+  private void startTimelines() {
+    realTimelineInMillis = new Timeline(0, 1000, Timeline.TimelineIterationTypes.REAL, this);
+    gameTimelineInMillis = new Timeline(realTimelineInMillis.getTime(), 1000, Timeline.TimelineIterationTypes.REAL, this);
+    gameTimelineInFrames = new Timeline(frameCount, 1, Timeline.TimelineIterationTypes.LOOP, this);
+
+    Queue<GameObject> timelines = new LinkedList<>();
+    timelines.add(realTimelineInMillis);
+    timelines.add(gameTimelineInMillis);
+    timelines.add(gameTimelineInFrames);
+
+    registerGameObjects(timelines, -1, true);
   }
 
   private void startServers() {
@@ -126,7 +143,7 @@ public class MainEngine extends PApplet {
             if (!gameObject.isVisible()) {
               i.remove();
             } else {
-              gameObject.updatePosition();
+              gameObject.update();
             }
           }
         }
@@ -139,7 +156,7 @@ public class MainEngine extends PApplet {
     synchronized (gameObjectsCluster) {
       if (gameObjectListID == -1) {
         gameObjectListID = gameObjectsCluster.size();
-        gameObjectsCluster.add(new ConcurrentLinkedQueue<>());
+        gameObjectsCluster.add(new LinkedList<>());
         updateOrNotArray.add(update);
       }
       gameObjectsCluster.set(gameObjectListID, gameObjects);
@@ -150,7 +167,7 @@ public class MainEngine extends PApplet {
 
   private void drawShapes() {
     synchronized (gameObjectsCluster) {
-      gameObjectsCluster.forEach(gameObjects -> gameObjects.forEach(GameObject::drawShape));
+      gameObjectsCluster.forEach(gameObjects -> gameObjects.forEach(GameObject::draw));
     }
   }
 

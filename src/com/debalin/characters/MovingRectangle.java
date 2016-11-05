@@ -18,9 +18,9 @@ public abstract class MovingRectangle extends DynamicGameObject {
     this.engine = engine;
   }
 
-  public abstract void updatePosition();
+  public abstract void update();
 
-  public void drawShape() {
+  public void draw() {
     engine.pushMatrix();
     engine.fill(color.x, color.y, color.z);
     engine.noStroke();

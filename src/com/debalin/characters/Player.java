@@ -57,7 +57,7 @@ public class Player extends MovingRectangle implements KeypressUser {
     this.spawnPoint = spawnPoint;
   }
 
-  public synchronized void updatePosition() {
+  public synchronized void update() {
     switch (state) {
       case ON_GROUND:
         checkBounds();

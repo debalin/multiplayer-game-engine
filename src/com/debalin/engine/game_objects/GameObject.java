@@ -38,8 +38,8 @@ public abstract class GameObject implements Serializable {
     this.connectionID = connectionID;
   }
 
-  public abstract void updatePosition();
-  public abstract void drawShape();
+  public abstract void update();
+  public abstract void draw();
 
   public boolean isVisible() {
     return visible;
