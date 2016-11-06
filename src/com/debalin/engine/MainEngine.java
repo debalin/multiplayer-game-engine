@@ -1,20 +1,20 @@
 package com.debalin.engine;
 
-import com.debalin.engine.events.KeypressUser;
+import com.debalin.engine.events.Event;
+import com.debalin.engine.events.EventManager;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
 import com.debalin.engine.network.GameServer;
 import com.debalin.engine.timeline.Timeline;
+import com.debalin.engine.util.EngineConstants;
 import com.debalin.engine.util.TextRenderer;
 import processing.core.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MainEngine extends PApplet {
 
   public List<Queue<GameObject>> gameObjectsCluster;
-  public List<KeypressUser> keypressUsers;
   public List<TextRenderer> textRenderers;
   public static Controller controller;
   public GameServer gameServer;
@@ -28,12 +28,13 @@ public class MainEngine extends PApplet {
   public static int smoothFactor;
 
   public Timeline realTimelineInMillis, gameTimelineInMillis, gameTimelineInFrames;
+  private EventManager eventManager;
 
   public MainEngine() {
     gameObjectsCluster = new ArrayList<>();
-    keypressUsers = new LinkedList<>();
     updateOrNotArray = new ArrayList<>();
     textRenderers = new ArrayList<>();
+    eventManager = new EventManager(this);
   }
 
   public int registerGameObject(GameObject gameObject, int gameObjectListID, boolean update) {
@@ -47,10 +48,6 @@ public class MainEngine extends PApplet {
     }
 
     return gameObjectListID;
-  }
-
-  public void registerKeypressUser(KeypressUser keypressUser) {
-    keypressUsers.add(keypressUser);
   }
 
   public void registerTextRenderer(TextRenderer textRenderer) { textRenderers.add(textRenderer); }
@@ -87,6 +84,11 @@ public class MainEngine extends PApplet {
     controller.setEngine(this);
     startServers();
     startTimelines();
+    startEventHandling();
+  }
+
+  private void startEventHandling() {
+    (new Thread(eventManager)).start();
   }
 
   private void startTimelines() {
@@ -98,6 +100,8 @@ public class MainEngine extends PApplet {
     timelines.add(realTimelineInMillis);
     timelines.add(gameTimelineInMillis);
     timelines.add(gameTimelineInFrames);
+
+    eventManager.registerTimeline(gameTimelineInMillis);
 
     registerGameObjects(timelines, -1, true);
   }
@@ -172,15 +176,25 @@ public class MainEngine extends PApplet {
   }
 
   public void keyPressed() {
-    for (KeypressUser keypressUser : keypressUsers) {
-      keypressUser.handleKeypress(key, true);
-    }
+    if (serverMode)
+      return;
+    List<Object> eventParameters = new ArrayList<>();
+    eventParameters.add(new Integer(key));
+    eventParameters.add(new Boolean(true));
+
+    Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters);
+    eventManager.raiseEvent(event, gameTimelineInMillis);
   }
 
   public void keyReleased() {
-    for (KeypressUser keypressUser : keypressUsers) {
-      keypressUser.handleKeypress(key, false);
-    }
+    if (serverMode)
+      return;
+    List<Object> eventParameters = new ArrayList<>();
+    eventParameters.add(new Integer(key));
+    eventParameters.add(new Boolean(false));
+
+    Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters);
+    eventManager.raiseEvent(event, gameTimelineInMillis);
   }
 
   public GameClient registerClient(String remoteServerAddress, int remoteServerPort, Controller controller) {
@@ -195,6 +209,10 @@ public class MainEngine extends PApplet {
       gameServer = new GameServer(localServerPort, controller);
 
     return gameServer;
+  }
+
+  public EventManager getEventManager() {
+    return eventManager;
   }
 
 }

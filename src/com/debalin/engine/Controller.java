@@ -1,5 +1,6 @@
 package com.debalin.engine;
 
+import com.debalin.engine.events.EventHandler;
 import com.debalin.engine.game_objects.GameObject;
 
 import java.util.Queue;
@@ -18,6 +19,8 @@ public abstract class Controller {
   public abstract void initialize();
 
   public abstract void manage();
+
+  public abstract EventHandler getEventHandler();
 
   public int incrementClientCount() {
     synchronized (clientCount) {

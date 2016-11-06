@@ -45,7 +45,7 @@ public class GameClient implements Runnable {
       while (true) {
         try {
           GameObject gameObject;
-          if (EngineConstants.stringProtocol)
+          if (EngineConstants.STRING_PROTOCOL)
             gameObject = GameObjectAndStringConverter.convertStringToGameObject((String)in.readObject(), controller);
           else
             gameObject = (GameObject) in.readObject();
@@ -59,7 +59,7 @@ public class GameClient implements Runnable {
           }
         }
         catch (IOException e) {
-          if (e.getMessage().equals(EngineConstants.readErrorMessage)) {
+          if (e.getMessage().equals(EngineConstants.READ_ERROR_MESSAGE)) {
             System.out.println("Connection lost with server, will stop client read thread.");
             return;
           }
@@ -92,27 +92,27 @@ public class GameClient implements Runnable {
         if (dataToSend == null)
           continue;
         GameObject startObject = new NetworkStartTag(-1);
-        if (EngineConstants.stringProtocol)
+        if (EngineConstants.STRING_PROTOCOL)
           out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(startObject));
         else
           out.writeObject(startObject);
 
         for (GameObject object : dataToSend) {
-          if (EngineConstants.stringProtocol)
+          if (EngineConstants.STRING_PROTOCOL)
             out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(object));
           else
             out.writeObject(object);
         }
 
         GameObject endObject = new NetworkEndTag();
-        if (EngineConstants.stringProtocol)
+        if (EngineConstants.STRING_PROTOCOL)
           out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(endObject));
         else
           out.writeObject(endObject);
         out.reset();
         Thread.sleep(1);
       } catch (IOException e) {
-        if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
+        if (e.getMessage().equals(EngineConstants.WRITE_ERROR_MESSAGE)) {
           System.out.println("Connection lost with server, will stop client write thread.");
           return;
         }

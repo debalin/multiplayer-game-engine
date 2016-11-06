@@ -36,4 +36,8 @@ public class Constants {
   public static final PVector SCORE_POSITION = new PVector(CLIENT_RESOLUTION.x - 150, 50);
   public static final int SCORE_INCREMENT_INTERVAL = 500;
 
+  public enum EVENT_TYPES {
+    PLAYER_DEATH, PLAYER_COLLISION, STAIR_SPAWN
+  }
+
 }

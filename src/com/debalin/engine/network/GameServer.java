@@ -61,7 +61,7 @@ public class GameServer implements Runnable {
       while (true) {
         try {
           GameObject gameObject;
-          if (EngineConstants.stringProtocol)
+          if (EngineConstants.STRING_PROTOCOL)
             gameObject = GameObjectAndStringConverter.convertStringToGameObject((String)in.readObject(), controller);
           else
             gameObject = (GameObject) in.readObject();
@@ -74,7 +74,7 @@ public class GameServer implements Runnable {
           }
         }
         catch (IOException e) {
-          if (e.getMessage().equals(EngineConstants.readErrorMessage)) {
+          if (e.getMessage().equals(EngineConstants.READ_ERROR_MESSAGE)) {
             System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
             return;
           }
@@ -105,20 +105,20 @@ public class GameServer implements Runnable {
       try {
         synchronized (writeQueue) {
           GameObject startObject = new NetworkStartTag(connectionID);
-          if (EngineConstants.stringProtocol)
+          if (EngineConstants.STRING_PROTOCOL)
             out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(startObject));
           else
             out.writeObject(startObject);
 
           while (!writeQueue.isEmpty()) {
-            if (EngineConstants.stringProtocol)
+            if (EngineConstants.STRING_PROTOCOL)
               out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(writeQueue.poll()));
             else
               out.writeObject(writeQueue.poll());
           }
 
           GameObject endObject = new NetworkEndTag();
-          if (EngineConstants.stringProtocol)
+          if (EngineConstants.STRING_PROTOCOL)
             out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(endObject));
           else
             out.writeObject(endObject);
@@ -128,7 +128,7 @@ public class GameServer implements Runnable {
             writeQueue.wait();
         }
       } catch (IOException e) {
-        if (e.getMessage().equals(EngineConstants.writeErrorMessage)) {
+        if (e.getMessage().equals(EngineConstants.WRITE_ERROR_MESSAGE)) {
           System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server write thread.");
           return;
         }

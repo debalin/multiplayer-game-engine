@@ -19,6 +19,7 @@ public class GameObjectAndStringConverter {
     String[] size;
     String[] position;
     String[] velocity;
+    String[] stairID;
 
     switch (variables[0]) {
       case "NetworkStartTag":
@@ -47,8 +48,9 @@ public class GameObjectAndStringConverter {
         size = variables[4].split(",");
         position = variables[5].split(",");
         velocity = variables[6].split(",");
+        stairID = variables[7].split(",");
 
-        FallingStair fallingStair = new FallingStair(controller.engine, new PVector(Float.parseFloat(color[0]), Float.parseFloat(color[1]), Float.parseFloat(color[2])), new PVector(Float.parseFloat(position[0]), Float.parseFloat(position[1]), Float.parseFloat(position[2])));
+        FallingStair fallingStair = new FallingStair(controller.engine, new PVector(Float.parseFloat(color[0]), Float.parseFloat(color[1]), Float.parseFloat(color[2])), new PVector(Float.parseFloat(position[0]), Float.parseFloat(position[1]), Float.parseFloat(position[2])), Long.parseLong(stairID[0]));
         fallingStair.setDeathStair(Boolean.parseBoolean(variables[1]));
         fallingStair.setVisible(Boolean.parseBoolean(variables[2]));
         fallingStair.setSize(new PVector(Float.parseFloat(size[0]), Float.parseFloat(size[1]), Float.parseFloat(size[2])));
@@ -60,8 +62,9 @@ public class GameObjectAndStringConverter {
         color = variables[2].split(",");
         size = variables[3].split(",");
         position = variables[4].split(",");
+        stairID = variables[5].split(",");
 
-        StandingStair standingStair = new StandingStair(controller.engine, new PVector(Float.parseFloat(color[0]), Float.parseFloat(color[1]), Float.parseFloat(color[2])), new PVector(Float.parseFloat(position[0]), Float.parseFloat(position[1]), Float.parseFloat(position[2])));
+        StandingStair standingStair = new StandingStair(controller.engine, new PVector(Float.parseFloat(color[0]), Float.parseFloat(color[1]), Float.parseFloat(color[2])), new PVector(Float.parseFloat(position[0]), Float.parseFloat(position[1]), Float.parseFloat(position[2])), Long.parseLong(stairID[0]));
         standingStair.setVisible(Boolean.parseBoolean(variables[1]));
         standingStair.setSize(new PVector(Float.parseFloat(size[0]), Float.parseFloat(size[1]), Float.parseFloat(size[2])));
 
@@ -86,7 +89,7 @@ public class GameObjectAndStringConverter {
       case "com.debalin.characters.Player":
         Player player = (Player) gameObject;
         result += "Player:";
-        result += player.getScore() + ":";
+        result += player.score + ":";
         result += player.isVisible() + ":";
         result += player.getColor().x + "," + player.getColor().y + "," + player.getColor().z + ":";
         result += player.getSize().x + "," + player.getSize().y + "," + player.getSize().z + ":";
@@ -102,6 +105,7 @@ public class GameObjectAndStringConverter {
         result += fallingStair.getSize().x + "," + fallingStair.getSize().y + "," + fallingStair.getSize().z + ":";
         result += fallingStair.getPosition().x + "," + fallingStair.getPosition().y + "," + fallingStair.getPosition().z + ":";
         result += fallingStair.getVelocity().x + "," + fallingStair.getVelocity().y + "," + fallingStair.getVelocity().z + ":";
+        result += fallingStair.getStairID() + ":";
         break;
       case "com.debalin.characters.StandingStair":
         StandingStair standingStair = (StandingStair) gameObject;
@@ -110,6 +114,7 @@ public class GameObjectAndStringConverter {
         result += standingStair.getColor().x + "," + standingStair.getColor().y + "," + standingStair.getColor().z + ":";
         result += standingStair.getSize().x + "," + standingStair.getSize().y + "," + standingStair.getSize().z + ":";
         result += standingStair.getPosition().x + "," + standingStair.getPosition().y + "," + standingStair.getPosition().z + ":";
+        result += standingStair.getStairID() + ":";
         break;
     }
 

@@ -1,5 +1,6 @@
 package com.debalin.characters;
 
+import com.debalin.engine.events.Event;
 import com.debalin.engine.game_objects.DynamicGameObject;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.events.KeypressUser;
@@ -9,24 +10,25 @@ import com.debalin.util.Collision;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 
-public class Player extends MovingRectangle implements KeypressUser {
+public class Player extends MovingRectangle {
 
-  private transient boolean LEFT, RIGHT, JUMP;
+  public transient boolean LEFT, RIGHT, JUMP;
   private transient Queue<GameObject> fallingStairs;
   private transient List<GameObject> standingStairs;
-  private transient GameObject collidedStair;
+  public transient GameObject collidedStair;
   private transient States state;
-  private float score = 100;
+  public float score = 100;
   private transient PVector averagePosition = new PVector(0, 0);
   private transient Random random = new Random();
 
   private transient SpawnPoint spawnPoint;
 
-  private enum States {
+  public enum States {
     ON_GROUND, ON_STAIR, ON_AIR
   }
 
@@ -78,26 +80,27 @@ public class Player extends MovingRectangle implements KeypressUser {
     position.add(velocity);
 
     averagePosition.add(position).div(2);
-    if (engine.frameCount % Constants.SCORE_INCREMENT_INTERVAL == 0)
+    if (engine.frameCount % Constants.SCORE_INCREMENT_INTERVAL == 0) {
       score *= ((Constants.CLIENT_RESOLUTION.y - averagePosition.y) / Constants.CLIENT_RESOLUTION.y);
-  }
-
-  public float getScore() {
-    return (score < 0) ? 0 : score;
+      score = (score < 0) ? 0 : score;
+    }
   }
 
   private void checkDeath() {
     if (collidedStair.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
       if (((FallingStair) collidedStair).isDeathStair) {
+        String eventType = Constants.EVENT_TYPES.PLAYER_DEATH.toString();
+        List<Object> eventParameters = new ArrayList<>();
+        eventParameters.add(new Long(((FallingStair) collidedStair).getStairID()));
+        Event event = new Event(eventType, eventParameters);
+        engine.getEventManager().raiseEvent(event, engine.gameTimelineInMillis);
         System.out.println("Player is dead.");
-        score -= 20;
-        ((FallingStair) collidedStair).setKilledPlayer(true);
-        regenerate();
       }
     }
   }
 
-  private void regenerate() {
+  public void regenerate() {
+    System.out.println("Player is regenerating.");
     position = spawnPoint.getPosition().copy();
     acceleration.y = Constants.PLAYER_MAX_ACC.y;
     changeState(States.ON_AIR);
@@ -132,32 +135,28 @@ public class Player extends MovingRectangle implements KeypressUser {
     }
   }
 
-  private void changeState(States state) {
+  public void changeState(States state) {
     this.state = state;
   }
 
   private void checkStairCollision() {
     fallingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
-      position.y = (stair).getPosition().y - size.y - 3;
-      LEFT = false;
-      RIGHT = false;
-      velocity.y = ((DynamicGameObject) stair).getVelocity().y;
-      acceleration.y = Constants.PLAYER_INIT_ACC.y;
-      changeState(States.ON_STAIR);
-      collidedStair = stair;
-      score += 10;
+      String eventType = Constants.EVENT_TYPES.PLAYER_COLLISION.toString();
+      List<Object> eventParameters = new ArrayList<>();
+      eventParameters.add(((FallingStair) stair).getStairID());
+      eventParameters.add(true);
+      Event event = new Event(eventType, eventParameters);
+      engine.getEventManager().raiseEvent(event, engine.gameTimelineInMillis);
       return;
     });
 
     standingStairs.stream().filter(stair -> Collision.hasCollidedRectangles(this, stair)).forEach(stair -> {
-      position.y = (stair).getPosition().y - size.y - 3;
-      LEFT = false;
-      RIGHT = false;
-      velocity.y = 0;
-      acceleration.y = Constants.PLAYER_INIT_ACC.y;
-      changeState(States.ON_STAIR);
-      collidedStair = stair;
-      score += 7;
+      String eventType = Constants.EVENT_TYPES.PLAYER_COLLISION.toString();
+      List<Object> eventParameters = new ArrayList<>();
+      eventParameters.add(((StandingStair) stair).getStairID());
+      eventParameters.add(false);
+      Event event = new Event(eventType, eventParameters);
+      engine.getEventManager().raiseEvent(event, engine.gameTimelineInMillis);
       return;
     });
   }
@@ -180,7 +179,7 @@ public class Player extends MovingRectangle implements KeypressUser {
   }
 
   public void handleKeypress(int key, boolean set) {
-    switch(key) {
+    switch (key) {
       case 'A':
       case 'a':
         LEFT = set;
@@ -192,6 +191,7 @@ public class Player extends MovingRectangle implements KeypressUser {
       case 32:
         if (state == States.ON_GROUND || state == States.ON_STAIR)
           JUMP = true;
+        break;
     }
   }
 
