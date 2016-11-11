@@ -84,21 +84,26 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
         Queue<GameObject> gameObjects = gameObjectsCluster.get(i);
         GameObject gameObject = gameObjects.peek();
         String type = gameObject.getClass().getTypeName();
-        if (type.equals(Player.class.getTypeName())) {
+        if (type.equals(Player.class.getTypeName()) && gameObject.getConnectionID() == getClientConnectionID().intValue()) {
           playerObjectID = i;
           player = (Player) gameObject;
           player.fallingStairs = fallingStairs;
           player.standingStairs = standingStairs;
-        }
-        if (type.equals(FallingStair.class.getTypeName())) {
+        } else if (type.equals(Player.class.getTypeName()) && gameObject.getConnectionID() != getClientConnectionID().intValue()) {
+          otherPlayersObjectID = i;
+          for (GameObject otherPlayer : gameObjects) {
+            ((Player) otherPlayer).standingStairs = standingStairs;
+            ((Player) otherPlayer).fallingStairs = fallingStairs;
+            otherPlayers.put(otherPlayer.getConnectionID(), otherPlayer);
+          }
+        } else if (type.equals(FallingStair.class.getTypeName())) {
           fallingStairsObjectID = i;
           fallingStairs.clear();
           fallingStairs.addAll(gameObjects);
           for (GameObject stair : fallingStairs) {
             stairMap.put(((FallingStair) stair).getStairID(), stair);
           }
-        }
-        if (type.equals(StandingStair.class.getTypeName())) {
+        } else if (type.equals(StandingStair.class.getTypeName())) {
           standingStairsObjectID = i;
           standingStairs.clear();
           standingStairs.addAll(gameObjects);

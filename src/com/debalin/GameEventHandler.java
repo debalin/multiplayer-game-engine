@@ -56,7 +56,8 @@ public class GameEventHandler implements EventHandler {
         Player otherPlayer = (Player) gameobject;
         otherPlayer.regenerate();
       }
-      simpleRaceManager.player.regenerate();
+      if (simpleRaceManager.player != null)
+        simpleRaceManager.player.regenerate();
       synchronized (simpleRaceManager.fallingStairs) {
         simpleRaceManager.fallingStairs.clear();
       }

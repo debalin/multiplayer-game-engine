@@ -27,8 +27,7 @@ public class GameServer implements Runnable {
     try {
       serverSocket = new ServerSocket(this.localServerPort);
       System.out.println("Server started at IP " + serverSocket.getLocalSocketAddress() + ".");
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       System.out.println("Some error in GameServer.");
       e.printStackTrace();
     }
@@ -58,14 +57,12 @@ public class GameServer implements Runnable {
       Event event = null;
       try {
         event = (Event) in.readObject();
-      }
-      catch (IOException e) {
+      } catch (IOException e) {
         if (e.getMessage().equals(EngineConstants.READ_ERROR_MESSAGE)) {
           System.out.println("IO Exception. Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
           return;
         }
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
         return;
       }
@@ -101,14 +98,12 @@ public class GameServer implements Runnable {
           while (writeQueue.isEmpty())
             writeQueue.wait();
         }
-      }
-      catch (IOException e) {
+      } catch (IOException e) {
         if (e.getMessage().equals(EngineConstants.WRITE_ERROR_MESSAGE)) {
           System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server write thread.");
           return;
         }
-      }
-      catch (InterruptedException e) {
+      } catch (InterruptedException e) {
         System.out.println("Some issue in writeQueue.");
       }
     }

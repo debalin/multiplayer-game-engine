@@ -33,9 +33,11 @@ public class MainEngine extends PApplet {
 
   public Timeline realTimelineInMillis, gameTimelineInMillis, totalTimelineInFrames, gameTimelineInFrames;
   private EventManager eventManager;
+
   public enum ReplaySpeed {
     SLOW, NORMAL, FAST
   }
+
   public ReplaySpeed replaySpeed;
 
   public float targetAlpha = 0, signToggle;

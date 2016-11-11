@@ -167,8 +167,7 @@ public class EventManager implements Runnable {
                 orderedEvent = timelineQueue.poll();
                 MainEngine.controller.getEventHandler().onEvent(orderedEvent.event);
 //                System.out.println("Handling recorded event " + orderedEvent.event.getEventType() + ".");
-              }
-              else {
+              } else {
                 break;
               }
               if (timelineQueue.isEmpty()) {
