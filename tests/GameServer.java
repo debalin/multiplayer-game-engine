@@ -3,8 +3,6 @@ package com.debalin.engine.network;
 import com.debalin.engine.Controller;
 import com.debalin.engine.util.EngineConstants;
 import com.debalin.engine.game_objects.GameObject;
-import com.debalin.engine.game_objects.NetworkEndTag;
-import com.debalin.engine.game_objects.NetworkStartTag;
 
 import java.net.*;
 import java.io.*;

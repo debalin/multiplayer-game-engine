@@ -1,11 +1,9 @@
 package com.debalin.characters;
 
 import com.debalin.engine.events.Event;
-import com.debalin.engine.game_objects.DynamicGameObject;
 import com.debalin.engine.game_objects.GameObject;
-import com.debalin.engine.events.KeypressUser;
 import com.debalin.engine.MainEngine;
-import com.debalin.engine.util.TextRenderer;
+import com.debalin.engine.util.EngineConstants;
 import com.debalin.util.Collision;
 import com.debalin.util.Constants;
 import processing.core.PVector;
@@ -13,43 +11,30 @@ import processing.core.PVector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Random;
 
 public class Player extends MovingRectangle {
 
-  public transient boolean LEFT, RIGHT, JUMP;
-  private transient Queue<GameObject> fallingStairs;
-  private transient List<GameObject> standingStairs;
-  public transient GameObject collidedStair;
-  private transient States state;
+  public boolean LEFT, RIGHT, JUMP;
+  public Queue<GameObject> fallingStairs;
+  public List<GameObject> standingStairs;
+  public GameObject collidedStair;
+  private States state;
   public float score = 100;
-  private transient PVector averagePosition = new PVector(0, 0);
-  private transient Random random = new Random();
+  private PVector averagePosition = new PVector(0, 0);
 
-  private transient SpawnPoint spawnPoint;
+  private SpawnPoint spawnPoint;
 
   public enum States {
     ON_GROUND, ON_STAIR, ON_AIR
-  }
-
-  public int getConnectionID() {
-    return connectionID;
   }
 
   public boolean isVisible() {
     return visible;
   }
 
-  public void setScore(float score) {
-    this.score = score;
-  }
-  public void setConnectionID(int connectionID) {
-    this.connectionID = connectionID;
-  }
-
-  public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, List<GameObject> standingStairs) {
+  public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, List<GameObject> standingStairs, PVector color) {
     super(Constants.PLAYER_COLOR, spawnPoint.getPosition(), Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_MAX_ACC, engine);
-    color = (new PVector(random.nextInt(255), random.nextInt(255), random.nextInt(255))).copy();
+    this.color = color;
     this.fallingStairs = fallingStairs;
     this.standingStairs = standingStairs;
     LEFT = RIGHT = JUMP = false;
@@ -59,7 +44,7 @@ public class Player extends MovingRectangle {
     this.spawnPoint = spawnPoint;
   }
 
-  public synchronized void update() {
+  public synchronized void update(float frameTicSize) {
     switch (state) {
       case ON_GROUND:
         checkBounds();
@@ -76,8 +61,8 @@ public class Player extends MovingRectangle {
 
     moveAndJump();
 
-    velocity.add(acceleration);
-    position.add(velocity);
+    velocity.add(PVector.mult(acceleration, frameTicSize));
+    position.add(PVector.mult(velocity, frameTicSize));
 
     averagePosition.add(position).div(2);
     if (engine.frameCount % Constants.SCORE_INCREMENT_INTERVAL == 0) {
@@ -92,8 +77,9 @@ public class Player extends MovingRectangle {
         String eventType = Constants.EVENT_TYPES.PLAYER_DEATH.toString();
         List<Object> eventParameters = new ArrayList<>();
         eventParameters.add(new Long(((FallingStair) collidedStair).getStairID()));
-        Event event = new Event(eventType, eventParameters);
-        engine.getEventManager().raiseEvent(event, engine.gameTimelineInMillis);
+        eventParameters.add(getConnectionID());
+        Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), engine.controller.getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), true);
+        engine.getEventManager().raiseEvent(event, false);
         System.out.println("Player is dead.");
       }
     }
@@ -145,8 +131,9 @@ public class Player extends MovingRectangle {
       List<Object> eventParameters = new ArrayList<>();
       eventParameters.add(((FallingStair) stair).getStairID());
       eventParameters.add(true);
-      Event event = new Event(eventType, eventParameters);
-      engine.getEventManager().raiseEvent(event, engine.gameTimelineInMillis);
+      eventParameters.add(getConnectionID());
+      Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), engine.controller.getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), true);
+      engine.getEventManager().raiseEvent(event, false);
       return;
     });
 
@@ -155,8 +142,9 @@ public class Player extends MovingRectangle {
       List<Object> eventParameters = new ArrayList<>();
       eventParameters.add(((StandingStair) stair).getStairID());
       eventParameters.add(false);
-      Event event = new Event(eventType, eventParameters);
-      engine.getEventManager().raiseEvent(event, engine.gameTimelineInMillis);
+      eventParameters.add(getConnectionID());
+      Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), engine.controller.getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), true);
+      engine.getEventManager().raiseEvent(event, false);
       return;
     });
   }

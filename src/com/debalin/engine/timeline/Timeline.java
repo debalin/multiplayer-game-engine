@@ -1,45 +1,50 @@
 package com.debalin.engine.timeline;
 
+import com.debalin.engine.MainEngine;
 import com.debalin.engine.game_objects.DynamicGameObject;
 import processing.core.PApplet;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class Timeline extends DynamicGameObject {
+public class Timeline extends DynamicGameObject implements Serializable {
 
-  private double anchor;
-  private double ticSize;
-  private AtomicLong time;
+  private float anchor;
+  private float ticSize;
+  private float time;
   private TimelineIterationTypes timelineIterationType;
-  private PApplet engineRef;
 
   public enum TimelineIterationTypes {
     REAL, LOOP
   }
 
-  public Timeline(long anchor, int ticSize, TimelineIterationTypes timelineIterationType, PApplet engineRef) {
+  public Timeline(Timeline anchorTimeline, float ticSize, TimelineIterationTypes timelineIterationType, MainEngine engine) {
     visible = true;
-    this.anchor = anchor;
-    this.time = new AtomicLong(anchor);
+    if (anchorTimeline == null)
+      this.anchor = 0;
+    else
+      this.anchor = anchorTimeline.getTime();
+    this.time = this.anchor;
     this.ticSize = ticSize;
     this.timelineIterationType = timelineIterationType;
-    this.engineRef = engineRef;
-    this.update();
+    this.engine = engine;
+    this.update(1f);
   }
 
-  public void update() {
+  public void update(float frameTicSize) {
     switch (timelineIterationType) {
       case REAL:
-        time.set((long)((System.nanoTime() - anchor) / ticSize));
+        time = (System.nanoTime() - anchor) / ticSize;
         break;
       case LOOP:
-        time.set((long)((engineRef.frameCount - anchor) / ticSize));
+        time = (engine.frameCount - anchor) / ticSize;
     }
   }
 
-  public void draw() {}
+  public void draw() {
+  }
 
-  public long getTime() {
-    return time.get();
+  public float getTime() {
+    return time;
   }
 }

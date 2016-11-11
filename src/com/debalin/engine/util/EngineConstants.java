@@ -11,4 +11,8 @@ public class EngineConstants {
     USER_INPUT
   }
 
+  public enum DEFAULT_TIMELINES {
+    REAL_MILLIS, GAME_MILLIS, GAME_LOOPS
+  }
+
 }

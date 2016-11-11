@@ -11,6 +11,7 @@ import com.debalin.engine.events.EventManager;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
 import com.debalin.engine.network.GameServer;
+import com.debalin.engine.util.EngineConstants;
 import com.debalin.engine.util.TextRenderer;
 import com.debalin.util.Constants;
 import processing.core.PVector;
@@ -19,6 +20,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SimpleRaceManager extends Controller implements TextRenderer {
 
@@ -33,13 +35,12 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
   public GameServer gameServer;
   public GameClient gameClient;
 
-  private int fallingStairsObjectID;
-  private int standingStairsObjectID;
-  private int otherPlayersObjectID;
-  private int playerObjectID;
+  public int fallingStairsObjectID;
+  public int standingStairsObjectID;
+  public int otherPlayersObjectID;
+  public int playerObjectID;
 
-  private Integer clientConnectionID;
-  Map<Integer, Queue<GameObject>> fromServerWriteQueues;
+  Map<Integer, Queue<Event>> fromServerWriteQueues;
 
   DecimalFormat dateFormat;
 
@@ -53,8 +54,6 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
     stairCount = 0;
     otherPlayers = new ConcurrentHashMap<>();
     fallingStairsObjectID = standingStairsObjectID = otherPlayersObjectID = playerObjectID = -1;
-
-    clientConnectionID = -1;
     fromServerWriteQueues = new HashMap<>();
 
     dateFormat = new DecimalFormat();
@@ -69,13 +68,46 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
     if (args[0].toLowerCase().equals("s")) {
       System.out.println("Starting as server.");
       simpleRaceManager = new SimpleRaceManager(true);
-    }
-    else {
+    } else {
       System.out.println("Starting as client.");
       simpleRaceManager = new SimpleRaceManager(false);
     }
 
     simpleRaceManager.startEngine();
+  }
+
+  @Override
+  public void mirrorGameObjects(List<Queue<GameObject>> gameObjectsCluster) {
+    stairMap.clear();
+    synchronized (gameObjectsCluster) {
+      for (int i = 0; i <= gameObjectsCluster.size() - 1; i++) {
+        Queue<GameObject> gameObjects = gameObjectsCluster.get(i);
+        GameObject gameObject = gameObjects.peek();
+        String type = gameObject.getClass().getTypeName();
+        if (type.equals(Player.class.getTypeName())) {
+          playerObjectID = i;
+          player = (Player) gameObject;
+          player.fallingStairs = fallingStairs;
+          player.standingStairs = standingStairs;
+        }
+        if (type.equals(FallingStair.class.getTypeName())) {
+          fallingStairsObjectID = i;
+          fallingStairs.clear();
+          fallingStairs.addAll(gameObjects);
+          for (GameObject stair : fallingStairs) {
+            stairMap.put(((FallingStair) stair).getStairID(), stair);
+          }
+        }
+        if (type.equals(StandingStair.class.getTypeName())) {
+          standingStairsObjectID = i;
+          standingStairs.clear();
+          standingStairs.addAll(gameObjects);
+          for (GameObject stair : standingStairs) {
+            stairMap.put(((StandingStair) stair).getStairID(), stair);
+          }
+        }
+      }
+    }
   }
 
   private void startEngine() {
@@ -93,7 +125,10 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
       content += "Player " + index + ": " + dateFormat.format(player.score) + "\n";
     }
 
-    content += "\nMy score: " + dateFormat.format(player.score);
+    if (player != null)
+      content += "\nMy score: " + dateFormat.format(player.score);
+    else
+      content += "\nMy score: " + dateFormat.format(0);
 
     return content;
   }
@@ -107,96 +142,41 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
     MainEngine.registerConstants(Constants.CLIENT_RESOLUTION, Constants.SERVER_RESOLUTION, Constants.SMOOTH_FACTOR, Constants.BACKGROUND_RGB, serverMode);
   }
 
-  private void registerPlayer() {
-    System.out.println("Registering Player.");
-    playerObjectID = engine.registerGameObject(player, playerObjectID, true);
-  }
+  @Override
+  public void setup() {
+    registerEventTypes();
 
-  public Queue<GameObject> sendDataFromServer(int connectionID) {
-    if (fromServerWriteQueues.get(connectionID) == null) {
-      Queue<GameObject> fromServerWriteQueue = new LinkedList<>();
-      synchronized(fromServerWriteQueues) {
-        fromServerWriteQueues.put(connectionID, fromServerWriteQueue);
-        synchronized (fromServerWriteQueue) {
-          fromServerWriteQueue.addAll(standingStairs);
-        }
-      }
-    }
-
-    return fromServerWriteQueues.get(connectionID);
-  }
-
-  public void getDataFromServer(Queue<GameObject> gameObjects, int connectionID) {
-    synchronized (clientConnectionID) {
-      clientConnectionID = connectionID;
-    }
-
-    for (GameObject gameObject : gameObjects) {
-      if (gameObject.getClass().getTypeName().equals(FallingStair.class.getTypeName())) {
-        ((FallingStair) gameObject).engine = engine;
-        fallingStairs.add(gameObject);
-        stairMap.put(((FallingStair) gameObject).getStairID(), gameObject);
-        fallingStairsObjectID = engine.registerGameObject(gameObject, fallingStairsObjectID, true);
-      }
-      else if (gameObject.getClass().getTypeName().equals(StandingStair.class.getTypeName())) {
-        ((StandingStair) gameObject).engine = engine;
-        standingStairs.add(gameObject);
-        stairMap.put(((StandingStair) gameObject).getStairID(), gameObject);
-        standingStairsObjectID = engine.registerGameObject(gameObject, standingStairsObjectID, false);
-      }
-      else {
-        Player player = (Player) gameObject;
-        player.engine = engine;
-        int playerIndex = player.getConnectionID();
-
-        if (playerIndex != connectionID) {
-          otherPlayers.put(playerIndex, player);
-        }
-      }
-    }
-  }
-
-  public Queue<GameObject> sendDataFromClient() {
-    Queue<GameObject> dataToSend = new LinkedList<>();
-    synchronized (clientConnectionID) {
-      if (clientConnectionID == -1)
-        return null;
-      player.setConnectionID(clientConnectionID);
-    }
-    dataToSend.add(player);
-    return dataToSend;
-  }
-
-  public void getDataFromClient(Queue<GameObject> gameObjects, int connectionID) {
-    Player player = (Player) gameObjects.poll();
-    player.engine = engine;
-    otherPlayers.put(connectionID, player);
-  }
-
-  public void initialize() {
     if (!serverMode) {
+      AtomicInteger clientConnectionID = getClientConnectionID();
+      synchronized (clientConnectionID) {
+        try {
+          while (clientConnectionID.intValue() == -1)
+            clientConnectionID.wait();
+        } catch (InterruptedException ex) {
+        }
+      }
+      System.out.println("Connection ID is " + getClientConnectionID() + ".");
       initializePlayer();
-      registerPlayer();
-      registerTextRenderers();
-    }
-    else {
+    } else {
       spawnStandingStairs();
     }
+  }
 
+  public void registerServerOrClient() {
     if (serverMode) {
-      registerServer();
+      System.out.println("Registering Server.");
+      gameServer = engine.registerServer(Constants.SERVER_PORT, this);
+    } else {
+      System.out.println("Registering Client.");
+      gameClient = engine.registerClient(Constants.SERVER_ADDRESS, Constants.SERVER_PORT, this);
     }
-    else {
-      registerClient();
-    }
-
-    registerEventTypes();
   }
 
   private void registerEventTypes() {
     engine.getEventManager().registerEventType(Constants.EVENT_TYPES.PLAYER_DEATH.toString(), EventManager.EventPriorities.HIGH);
     engine.getEventManager().registerEventType(Constants.EVENT_TYPES.PLAYER_COLLISION.toString(), EventManager.EventPriorities.MED);
     engine.getEventManager().registerEventType(Constants.EVENT_TYPES.STAIR_SPAWN.toString(), EventManager.EventPriorities.LOW);
+    engine.getEventManager().registerEventType(Constants.EVENT_TYPES.PLAYER_SPAWN.toString(), EventManager.EventPriorities.HIGH);
   }
 
   private void registerTextRenderers() {
@@ -208,21 +188,15 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
     for (int i = 0; i < Constants.STANDING_STAIR_COUNT; i++) {
       PVector stairColor = new PVector((int) engine.random(0, 255), (int) engine.random(0, 255), (int) engine.random(0, 255));
       PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING_X, Constants.CLIENT_RESOLUTION.x - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING_X), engine.random(Constants.STAIR_PADDING_X, Constants.CLIENT_RESOLUTION.y - Constants.STANDING_STAIR_SIZE.x - Constants.STAIR_PADDING_X));
-      StandingStair stair = new StandingStair(engine, stairColor, stairInitPosition, stairCount++);
-
-      standingStairs.add(stair);
-      standingStairsObjectID = engine.registerGameObject(stair, standingStairsObjectID, false);
+      String eventType = Constants.EVENT_TYPES.STAIR_SPAWN.toString();
+      List<Object> eventParameters = new ArrayList<>();
+      eventParameters.add(stairCount++);
+      eventParameters.add(false);
+      eventParameters.add(stairColor);
+      eventParameters.add(stairInitPosition);
+      Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), true);
+      engine.getEventManager().raiseEvent(event, true);
     }
-  }
-
-  private void registerClient() {
-    System.out.println("Registering Client.");
-    gameClient = engine.registerClient(Constants.SERVER_ADDRESS, Constants.SERVER_PORT, this);
-  }
-
-  private void registerServer() {
-    System.out.println("Registering Server.");
-    gameServer = engine.registerServer(Constants.SERVER_PORT, this);
   }
 
   public void manage() {
@@ -230,62 +204,60 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
       if (engine.frameCount % Constants.FALLING_STAIR_SPAWN_INTERVAL == 0) {
         spawnFallingStair();
       }
-      synchronized (fromServerWriteQueues) {
-        for (Queue<GameObject> fromServerWriteQueue : fromServerWriteQueues.values()) {
-          synchronized (fromServerWriteQueue) {
-            fromServerWriteQueue.addAll(otherPlayers.values());
-            fromServerWriteQueue.notify();
-          }
-        }
-      }
-    }
-    else {
-      registerOtherPlayers();
     }
     removeStairs();
   }
 
-  private void registerOtherPlayers() {
-    if (otherPlayers.size() > 0) {
-      otherPlayersObjectID = engine.registerGameObjects((new LinkedList<>(otherPlayers.values())), otherPlayersObjectID, false);
-    }
-  }
-
   private void removeStairs() {
-    Iterator<GameObject> i = fallingStairs.iterator();
-    while (i.hasNext()) {
-      FallingStair stair = (FallingStair) i.next();
-      if (!stair.isVisible())
-        i.remove();
+    synchronized (fallingStairs) {
+      Iterator<GameObject> i = fallingStairs.iterator();
+      while (i.hasNext()) {
+        FallingStair stair = (FallingStair) i.next();
+        if (!stair.isVisible())
+          i.remove();
+      }
     }
   }
 
   private void spawnFallingStair() {
-    PVector stairColor = new PVector((int)engine.random(0, 255), (int)engine.random(0, 255), (int)engine.random(0, 255));
+    PVector stairColor = new PVector((int) engine.random(0, 255), (int) engine.random(0, 255), (int) engine.random(0, 255));
     PVector stairInitPosition = new PVector(engine.random(Constants.STAIR_PADDING_X, Constants.CLIENT_RESOLUTION.x - Constants.FALLING_STAIR_SIZE.x - Constants.STAIR_PADDING_X), Constants.FALLING_STAIR_START_Y);
-    FallingStair stair = new FallingStair(engine, stairColor, stairInitPosition, stairCount++);
+    PVector stairVelocity = new PVector(0, engine.random(Constants.FALLING_STAIR_MIN_VEL_Y, Constants.FALLING_STAIR_MAX_VEL_Y));
 
-    fallingStairs.add(stair);
-    synchronized (fromServerWriteQueues) {
-      for (Queue<GameObject> fromServerWriteQueue : fromServerWriteQueues.values()) {
-        synchronized (fromServerWriteQueue) {
-          fromServerWriteQueue.add(stair);
-          fromServerWriteQueue.notify();
-        }
-      }
-    }
+    String eventType = Constants.EVENT_TYPES.STAIR_SPAWN.toString();
+    List<Object> eventParameters = new ArrayList<>();
+    eventParameters.add(stairCount++);
+    eventParameters.add(true);
+    eventParameters.add(stairColor);
+    eventParameters.add(stairInitPosition);
+    eventParameters.add(stairVelocity);
+    if (engine.random(0, 1) > Constants.DEATH_STAIR_PROBABILITY)
+      eventParameters.add(true);
+    else
+      eventParameters.add(false);
+    Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), false);
 
-    fallingStairsObjectID = engine.registerGameObject(stair, fallingStairsObjectID, true);
+    engine.getEventManager().raiseEvent(event, true);
   }
 
   private void initializePlayer() {
     System.out.println("Initializing player.");
     playerSpawnPoint = new SpawnPoint(new PVector(engine.random(Constants.PLAYER_PADDING_X, Constants.CLIENT_RESOLUTION.x - Constants.PLAYER_PADDING_X), Constants.PLAYER_SPAWN_Y));
-    player = new Player(engine, playerSpawnPoint, fallingStairs, standingStairs);
+    PVector playerColor = new PVector((int) engine.random(0, 255), (int) engine.random(0, 255), (int) engine.random(0, 255));
+
+    String eventType = Constants.EVENT_TYPES.PLAYER_SPAWN.toString();
+    List<Object> eventParameters = new ArrayList<>();
+
+    eventParameters.add(playerSpawnPoint);
+    eventParameters.add(playerColor);
+    Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), true);
+
+    engine.getEventManager().raiseEvent(event, true);
   }
 
   @Override
   public EventHandler getEventHandler() {
     return eventHandler;
   }
+
 }

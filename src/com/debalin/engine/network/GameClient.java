@@ -1,14 +1,14 @@
 package com.debalin.engine.network;
 
 import com.debalin.engine.Controller;
+import com.debalin.engine.MainEngine;
+import com.debalin.engine.events.Event;
+import com.debalin.engine.timeline.Timeline;
 import com.debalin.engine.util.EngineConstants;
-import com.debalin.engine.game_objects.GameObject;
-import com.debalin.engine.game_objects.NetworkEndTag;
-import com.debalin.engine.game_objects.NetworkStartTag;
+import processing.core.PApplet;
 
 import java.net.*;
 import java.io.*;
-import java.util.LinkedList;
 import java.util.Queue;
 
 public class GameClient implements Runnable {
@@ -18,10 +18,13 @@ public class GameClient implements Runnable {
   private int remoteServerPort;
   private String remoteServerAddress;
 
-  public GameClient(String remoteServerAddress, int remoteServerPort, Controller controller) {
+  private MainEngine engine;
+
+  public GameClient(String remoteServerAddress, int remoteServerPort, Controller controller, MainEngine engine) {
     this.controller = controller;
     this.remoteServerPort = remoteServerPort;
     this.remoteServerAddress = remoteServerAddress;
+    this.engine = engine;
   }
 
   public void run() {
@@ -38,42 +41,36 @@ public class GameClient implements Runnable {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    Queue<GameObject> gameObjects = new LinkedList<>();
 
-    int connectionID = -1;
     while (true) {
-      while (true) {
-        try {
-          GameObject gameObject;
-          if (EngineConstants.STRING_PROTOCOL)
-            gameObject = GameObjectAndStringConverter.convertStringToGameObject((String)in.readObject(), controller);
-          else
-            gameObject = (GameObject) in.readObject();
-          if (gameObject.tag == GameServer.NetworkTag.START_TAG) {
-            connectionID = gameObject.connectionID;
-            gameObjects = new LinkedList<>();
-          } else if (gameObject.tag == GameServer.NetworkTag.OBJECT) {
-            gameObjects.add(gameObject);
-          } else if (gameObject.tag == GameServer.NetworkTag.END_TAG) {
-            break;
-          }
+      Event event = null;
+      try {
+        Object object = in.readObject();
+        if (object.getClass().getTypeName().equals(Integer.class.getTypeName())) {
+          controller.setClientConnectionID((Integer) object);
         }
-        catch (IOException e) {
-          if (e.getMessage().equals(EngineConstants.READ_ERROR_MESSAGE)) {
-            System.out.println("Connection lost with server, will stop client read thread.");
-            return;
-          }
+        else if (object.getClass().getTypeName().equals(Timeline.class.getTypeName())) {
+          engine.realTimelineInMillis = (Timeline) object;
+          engine.realTimelineInMillis.engine = engine;
         }
-        catch (Exception e) {
-          e.printStackTrace();
-          System.out.println("Connection lost with server, will stop client read thread.");
+        else {
+          event = (Event) object;
+        }
+      }
+      catch (IOException e) {
+        if (e.getMessage().equals(EngineConstants.READ_ERROR_MESSAGE)) {
+          System.out.println("IO Exception. Connection lost with server, will stop client read thread.");
           return;
         }
       }
-      if (gameObjects != null && gameObjects.size() > 0) {
-        controller.getDataFromServer(gameObjects, connectionID);
+      catch (Exception e) {
+        e.printStackTrace();
+        System.out.println("Connection lost with server, will stop client read thread.");
+        return;
       }
-      gameObjects = null;
+
+      if (event != null)
+        engine.getEventManager().raiseEvent(event, false);
     }
   }
 
@@ -85,32 +82,22 @@ public class GameClient implements Runnable {
       e.printStackTrace();
     }
 
+    Queue<Event> writeQueue = engine.getEventManager().getWriteQueue(-1);
+
     while (true) {
       try {
-        Queue<GameObject> dataToSend = controller.sendDataFromClient();
+        synchronized (writeQueue) {
+          while (!writeQueue.isEmpty()) {
+            Event event = writeQueue.poll();
+            event.setConnectionID(controller.getClientConnectionID().intValue());
+            out.writeObject(event);
+          }
 
-        if (dataToSend == null)
-          continue;
-        GameObject startObject = new NetworkStartTag(-1);
-        if (EngineConstants.STRING_PROTOCOL)
-          out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(startObject));
-        else
-          out.writeObject(startObject);
+          out.reset();
 
-        for (GameObject object : dataToSend) {
-          if (EngineConstants.STRING_PROTOCOL)
-            out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(object));
-          else
-            out.writeObject(object);
+          while (writeQueue.isEmpty())
+            writeQueue.wait();
         }
-
-        GameObject endObject = new NetworkEndTag();
-        if (EngineConstants.STRING_PROTOCOL)
-          out.writeObject(GameObjectAndStringConverter.convertGameObjectToString(endObject));
-        else
-          out.writeObject(endObject);
-        out.reset();
-        Thread.sleep(1);
       } catch (IOException e) {
         if (e.getMessage().equals(EngineConstants.WRITE_ERROR_MESSAGE)) {
           System.out.println("Connection lost with server, will stop client write thread.");

@@ -3,47 +3,42 @@ package com.debalin.engine;
 import com.debalin.engine.events.EventHandler;
 import com.debalin.engine.game_objects.GameObject;
 
+import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Controller {
 
   public MainEngine engine;
+  private AtomicInteger clientConnectionID;
 
-  public Integer clientCount = 0;
+  public Controller() {
+    clientConnectionID = new AtomicInteger(-1);
+  }
 
   public void setEngine(MainEngine engine) {
     this.engine = engine;
-    initialize();
   }
 
-  public abstract void initialize();
+  public abstract void setup();
 
   public abstract void manage();
 
   public abstract EventHandler getEventHandler();
 
-  public int incrementClientCount() {
-    synchronized (clientCount) {
-      return ++clientCount;
+  public abstract void registerServerOrClient();
+
+  public AtomicInteger getClientConnectionID() {
+    return clientConnectionID;
+  }
+
+  public void setClientConnectionID(int clientConnectionID) {
+    synchronized (this.clientConnectionID) {
+      this.clientConnectionID.set(clientConnectionID);
+      this.clientConnectionID.notify();
     }
   }
 
-  public int getClientCount() {
-    synchronized (clientCount) {
-      return clientCount;
-    }
-  }
-
-  public Queue<GameObject> sendDataFromServer(int connectionID) {
-    return null;
-  }
-
-  public Queue<GameObject> sendDataFromClient() {
-    return null;
-  }
-
-  public void getDataFromServer(Queue<GameObject> dataFromServer, int connectionID) {}
-
-  public void getDataFromClient(Queue<GameObject> dataFromClient, int connectionID) {}
+  public abstract void mirrorGameObjects(List<Queue<GameObject>> gameObjectsCluster);
 
 }

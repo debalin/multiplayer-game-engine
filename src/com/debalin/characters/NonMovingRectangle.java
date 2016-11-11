@@ -6,8 +6,6 @@ import processing.core.PVector;
 
 public abstract class NonMovingRectangle extends StaticGameObject {
 
-  transient public MainEngine engine;
-
   public NonMovingRectangle(PVector color, PVector position, PVector size, MainEngine engine) {
     this.color = new PVector(color.x, color.y, color.z);
     this.position = new PVector(position.x, position.y);

@@ -10,11 +10,15 @@ import com.debalin.engine.util.EngineConstants;
 import com.debalin.engine.util.TextRenderer;
 import processing.core.*;
 
+import java.io.*;
 import java.util.*;
 
 public class MainEngine extends PApplet {
 
-  public List<Queue<GameObject>> gameObjectsCluster;
+  public List<Queue<GameObject>> gameObjectsCluster, gameObjectsClusterBackup;
+  public List<Queue<GameObject>> gameObjectsClusterSnapshot;
+  ByteArrayOutputStream snapshot;
+
   public List<TextRenderer> textRenderers;
   public static Controller controller;
   public GameServer gameServer;
@@ -27,14 +31,40 @@ public class MainEngine extends PApplet {
   public static PVector backgroundRGB;
   public static int smoothFactor;
 
-  public Timeline realTimelineInMillis, gameTimelineInMillis, gameTimelineInFrames;
+  public Timeline realTimelineInMillis, gameTimelineInMillis, totalTimelineInFrames, gameTimelineInFrames;
   private EventManager eventManager;
+  public enum ReplaySpeed {
+    SLOW, NORMAL, FAST
+  }
+  public ReplaySpeed replaySpeed;
+
+  public float targetAlpha = 0, signToggle;
+  PFont recFont, instructionsFont;
 
   public MainEngine() {
     gameObjectsCluster = new ArrayList<>();
+    gameObjectsClusterBackup = new ArrayList<>();
+    gameObjectsClusterSnapshot = new ArrayList<>();
     updateOrNotArray = new ArrayList<>();
     textRenderers = new ArrayList<>();
     eventManager = new EventManager(this);
+    replaySpeed = ReplaySpeed.NORMAL;
+  }
+
+  public void takeSnapshot() {
+    try {
+      snapshot = new ByteArrayOutputStream();
+      ObjectOutputStream objectOutputStream = new ObjectOutputStream(snapshot);
+
+      synchronized (gameObjectsCluster) {
+        objectOutputStream.writeObject(gameObjectsCluster);
+        objectOutputStream.flush();
+        objectOutputStream.close();
+      }
+    } catch (IOException e) {
+    }
+
+    System.out.println("Snapshot taken and length is " + snapshot.toByteArray().length + ".");
   }
 
   public int registerGameObject(GameObject gameObject, int gameObjectListID, boolean update) {
@@ -50,7 +80,15 @@ public class MainEngine extends PApplet {
     return gameObjectListID;
   }
 
-  public void registerTextRenderer(TextRenderer textRenderer) { textRenderers.add(textRenderer); }
+  public void removeGameObjects(int gameObjectListID) {
+    synchronized (gameObjectsCluster) {
+      gameObjectsCluster.get(gameObjectListID).clear();
+    }
+  }
+
+  public void registerTextRenderer(TextRenderer textRenderer) {
+    textRenderers.add(textRenderer);
+  }
 
   public static void registerConstants(PVector inputClientResolution, PVector inputServerResolution, int inputSmoothFactor, PVector inputBackgroundRGB, boolean serverModeInput) {
     clientResolution = inputClientResolution.copy();
@@ -68,7 +106,7 @@ public class MainEngine extends PApplet {
     }
 
     controller = inputController;
-    PApplet.main(new String[] { "com.debalin.engine.MainEngine" });
+    PApplet.main(new String[]{"com.debalin.engine.MainEngine"});
   }
 
   public void settings() {
@@ -81,27 +119,38 @@ public class MainEngine extends PApplet {
   }
 
   public void setup() {
+    frameRate(40);
+    if (!MainEngine.serverMode) {
+      recFont = createFont("Verdana", 25);
+      instructionsFont = createFont("Verdana", 16);
+    }
     controller.setEngine(this);
+    controller.registerServerOrClient();
+    if (MainEngine.serverMode)
+      realTimelineInMillis = new Timeline(null, 1000000, Timeline.TimelineIterationTypes.REAL, this);
     startServers();
     startTimelines();
-    startEventHandling();
-  }
-
-  private void startEventHandling() {
-    (new Thread(eventManager)).start();
+    controller.setup();
   }
 
   private void startTimelines() {
-    realTimelineInMillis = new Timeline(0, 1000, Timeline.TimelineIterationTypes.REAL, this);
-    gameTimelineInMillis = new Timeline(realTimelineInMillis.getTime(), 1000, Timeline.TimelineIterationTypes.REAL, this);
-    gameTimelineInFrames = new Timeline(frameCount, 1, Timeline.TimelineIterationTypes.LOOP, this);
+    if (!MainEngine.serverMode) {
+      while (realTimelineInMillis == null) {
+        try {
+          Thread.sleep(1);
+        } catch (Exception ex) {
+        }
+      }
+    }
+    gameTimelineInMillis = new Timeline(realTimelineInMillis, 1000000, Timeline.TimelineIterationTypes.REAL, this);
+    totalTimelineInFrames = new Timeline(null, 1, Timeline.TimelineIterationTypes.LOOP, this);
+    gameTimelineInFrames = new Timeline(totalTimelineInFrames, 1, Timeline.TimelineIterationTypes.LOOP, this);
 
     Queue<GameObject> timelines = new LinkedList<>();
-    timelines.add(realTimelineInMillis);
     timelines.add(gameTimelineInMillis);
     timelines.add(gameTimelineInFrames);
 
-    eventManager.registerTimeline(gameTimelineInMillis);
+    eventManager.registerTimeline(gameTimelineInMillis, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString());
 
     registerGameObjects(timelines, -1, true);
   }
@@ -119,12 +168,52 @@ public class MainEngine extends PApplet {
     updatePositions();
 
     if (!serverMode) {
-      drawShapes();
       drawText();
+      drawShapes();
+      eventManager.handleEvents();
     }
   }
 
   private void drawText() {
+
+    if (eventManager.recording) {
+      pushMatrix();
+      textFont(recFont);
+      noStroke();
+      fill(255, 0, 0);
+      text("REC", clientResolution.x - 110, 90);
+      fill(255, 0, 0, targetAlpha);
+      ellipse(clientResolution.x - 125, 82, 20, 20);
+      popMatrix();
+
+      if (targetAlpha <= 0.0)
+        signToggle = 2;
+      else if (targetAlpha >= 255.0)
+        signToggle = -2;
+      targetAlpha += signToggle;
+    } else if (eventManager.playingRecording) {
+      pushMatrix();
+      noStroke();
+      fill(255, 0, 0, targetAlpha);
+      triangle(clientResolution.x - 80, 82, clientResolution.x - 100, 72, clientResolution.x - 100, 92);
+      popMatrix();
+
+      if (targetAlpha <= 0.0)
+        signToggle = 2;
+      else if (targetAlpha >= 255.0)
+        signToggle = -2;
+      targetAlpha += signToggle;
+    }
+
+    pushMatrix();
+    textFont(instructionsFont);
+    noStroke();
+    fill(255, 255, 255);
+    text("R: RECORD", clientResolution.x - 140, clientResolution.y - 90);
+    text("H: HALT", clientResolution.x - 140, clientResolution.y - 70);
+    text("N: NORMAL PLAY", clientResolution.x - 140, clientResolution.y - 50);
+    popMatrix();
+
     for (TextRenderer textRenderer : textRenderers) {
       String content = textRenderer.getTextContent();
       PVector position = textRenderer.getTextPosition();
@@ -147,7 +236,21 @@ public class MainEngine extends PApplet {
             if (!gameObject.isVisible()) {
               i.remove();
             } else {
-              gameObject.update();
+              if (!eventManager.playingRecording)
+                gameObject.update(1f);
+              else {
+                switch (replaySpeed) {
+                  case SLOW:
+                    gameObject.update(0.5f);
+                    break;
+                  case NORMAL:
+                    gameObject.update(1f);
+                    break;
+                  case FAST:
+                    gameObject.update(2f);
+                    break;
+                }
+              }
             }
           }
         }
@@ -178,35 +281,93 @@ public class MainEngine extends PApplet {
   public void keyPressed() {
     if (serverMode)
       return;
-    List<Object> eventParameters = new ArrayList<>();
-    eventParameters.add(new Integer(key));
-    eventParameters.add(new Boolean(true));
+    switch (key) {
+      default:
+        List<Object> eventParameters = new ArrayList<>();
+        eventParameters.add(new Integer(key));
+        eventParameters.add(new Boolean(true));
 
-    Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters);
-    eventManager.raiseEvent(event, gameTimelineInMillis);
+        Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
+    }
   }
 
   public void keyReleased() {
     if (serverMode)
       return;
-    List<Object> eventParameters = new ArrayList<>();
-    eventParameters.add(new Integer(key));
-    eventParameters.add(new Boolean(false));
+    switch (key) {
+      case 'R':
+      case 'r':
+        System.out.println("Starting recording.");
+        takeSnapshot();
+        eventManager.setRecording(true);
+        break;
+      case 'H':
+      case 'h':
+        System.out.println("Stopping recording.");
+        eventManager.setRecording(false);
+        break;
+      case 'N':
+      case 'n':
+        System.out.println("Playing recording in normal speed.");
+        replaySpeed = ReplaySpeed.NORMAL;
+        playRecordedGameObjects(1f);
+        break;
+      default:
+        List<Object> eventParameters = new ArrayList<>();
+        eventParameters.add(new Integer(key));
+        eventParameters.add(new Boolean(false));
 
-    Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters);
-    eventManager.raiseEvent(event, gameTimelineInMillis);
+        Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
+    }
+  }
+
+  private void playRecordedGameObjects(float frameTicSize) {
+    try {
+      ObjectInputStream objectInputStream = new ObjectInputStream(new ByteArrayInputStream(snapshot.toByteArray()));
+      gameObjectsClusterSnapshot = (List<Queue<GameObject>>) objectInputStream.readObject();
+    } catch (IOException ex) {
+    } catch (ClassNotFoundException ex) {
+    }
+
+    for (Queue<GameObject> gameObjects : gameObjectsClusterSnapshot) {
+      for (GameObject gameObject : gameObjects) {
+        gameObject.engine = this;
+      }
+    }
+
+    synchronized (gameObjectsCluster) {
+      gameObjectsClusterBackup.clear();
+      gameObjectsClusterBackup.addAll(gameObjectsCluster);
+      gameObjectsCluster.clear();
+      gameObjectsCluster.addAll(gameObjectsClusterSnapshot);
+    }
+
+    controller.mirrorGameObjects(gameObjectsCluster);
+    eventManager.playRecordedEvents(frameTicSize);
+  }
+
+  public void stopPlayingRecordedGameObjects() {
+    synchronized (gameObjectsCluster) {
+      gameObjectsCluster.clear();
+      gameObjectsClusterSnapshot.clear();
+      gameObjectsCluster.addAll(gameObjectsClusterBackup);
+    }
+
+    controller.mirrorGameObjects(gameObjectsCluster);
   }
 
   public GameClient registerClient(String remoteServerAddress, int remoteServerPort, Controller controller) {
     if (gameClient == null)
-      gameClient = new GameClient(remoteServerAddress, remoteServerPort, controller);
+      gameClient = new GameClient(remoteServerAddress, remoteServerPort, controller, this);
 
     return gameClient;
   }
 
   public GameServer registerServer(int localServerPort, Controller controller) {
     if (gameServer == null)
-      gameServer = new GameServer(localServerPort, controller);
+      gameServer = new GameServer(localServerPort, controller, this);
 
     return gameServer;
   }

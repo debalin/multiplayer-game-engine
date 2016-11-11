@@ -9,7 +9,6 @@ public class SpawnPoint extends StaticGameObject {
     this.position = new PVector(position.x, position.y);
   }
 
-  public void update(){}
   public void draw(){}
 
 }

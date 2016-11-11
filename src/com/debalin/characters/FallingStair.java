@@ -7,31 +7,25 @@ import processing.core.PVector;
 public class FallingStair extends MovingRectangle {
 
   protected boolean isDeathStair = false;
-  protected transient boolean killedPlayer = false;
+  protected boolean killedPlayer = false;
 
   private long stairID;
-
-  public boolean isDeathStair() { return isDeathStair; }
 
   public void setKilledPlayer(boolean killedPlayer) {
     this.killedPlayer = killedPlayer;
   }
-  public void setDeathStair(boolean deathStair) {
-    isDeathStair = deathStair;
-  }
 
-  public FallingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition, long stairID) {
-    super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, new PVector(0, engine.random(Constants.FALLING_STAIR_MIN_VEL_Y, Constants.FALLING_STAIR_MAX_VEL_Y)), Constants.FALLING_STAIR_INIT_ACC, engine);
+  public FallingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition, long stairID, PVector velocity, boolean isDeathStair) {
+    super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, velocity, Constants.FALLING_STAIR_INIT_ACC, engine);
     visible = true;
 
-    if (engine.random(0, 1) > Constants.DEATH_STAIR_PROBABILITY)
-      isDeathStair = true;
+    this.isDeathStair = isDeathStair;
 
     this.stairID = stairID;
   }
 
-  public void update() {
-    position.add(velocity);
+  public void update(float frameTicSize) {
+    position.add(PVector.mult(velocity, frameTicSize));
     checkBounds();
   }
 
@@ -48,14 +42,12 @@ public class FallingStair extends MovingRectangle {
       engine.noStroke();
       engine.fill(color.x, color.y, color.z);
       engine.rect(position.x, position.y, size.x, size.y);
-    }
-    else {
+    } else {
       if (killedPlayer) {
         engine.noFill();
         engine.stroke(255, 0, 0);
         engine.rect(position.x, position.y, size.x, size.y);
-      }
-      else {
+      } else {
         engine.noFill();
         engine.stroke(255, 255, 0);
         engine.rect(position.x, position.y, size.x, size.y);

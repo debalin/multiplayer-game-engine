@@ -6,8 +6,6 @@ import processing.core.PVector;
 
 public abstract class MovingRectangle extends DynamicGameObject {
 
-  transient public MainEngine engine;
-
   public MovingRectangle(PVector color, PVector position, PVector size, PVector velocity, PVector acceleration, MainEngine engine) {
     this.color = new PVector(color.x, color.y, color.z);
     this.position = new PVector(position.x, position.y);
@@ -17,8 +15,6 @@ public abstract class MovingRectangle extends DynamicGameObject {
 
     this.engine = engine;
   }
-
-  public abstract void update();
 
   public void draw() {
     engine.pushMatrix();
