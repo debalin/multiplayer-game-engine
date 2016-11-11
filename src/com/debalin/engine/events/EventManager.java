@@ -20,7 +20,7 @@ public class EventManager implements Runnable {
   Queue<Event> startupEvents;
 
   public Timeline replayTimelineInFrames;
-  public float replayStartFrame = -1;
+  public float replayStartFrame;
 
   public boolean recording = false;
   public boolean playingRecording = false;
@@ -162,8 +162,8 @@ public class EventManager implements Runnable {
           while (!timelineQueue.isEmpty()) {
             if (playingRecording) {
               OrderedEvent orderedEvent = timelineQueue.peek();
-//            System.out.println("Frame difference: " + (orderedEvent.event.frame - replayStartFrame) + ", current replay time: " + replayTimelineInFrames.getTime() + ".");
-              if (orderedEvent.event.frame - replayStartFrame <= replayTimelineInFrames.getTime()) {
+//              System.out.println("Frame difference: " + (orderedEvent.event.frame - replayStartFrame) + ", current replay time: " + replayTimelineInFrames.getTime() + ".");
+              if (orderedEvent.event.frame - replayStartFrame <= replayTimelineInFrames.getTime() - 1) {
                 orderedEvent = timelineQueue.poll();
                 MainEngine.controller.getEventHandler().onEvent(orderedEvent.event);
 //                System.out.println("Handling recorded event " + orderedEvent.event.getEventType() + ".");
