@@ -188,7 +188,6 @@ public class MainEngine extends PApplet {
   }
 
   private void drawText() {
-
     if (eventManager.recording) {
       pushMatrix();
       textFont(recFont);
