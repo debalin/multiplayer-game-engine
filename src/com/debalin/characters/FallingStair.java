@@ -17,7 +17,7 @@ public class FallingStair extends MovingRectangle {
 
   public FallingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition, long stairID, PVector velocity, boolean isDeathStair) {
     super(stairColor, stairInitPosition, Constants.FALLING_STAIR_SIZE, velocity, Constants.FALLING_STAIR_INIT_ACC, engine);
-    visible = true;
+    setVisible(true);
 
     this.isDeathStair = isDeathStair;
 
@@ -31,7 +31,7 @@ public class FallingStair extends MovingRectangle {
 
   private void checkBounds() {
     if (position.y > Constants.CLIENT_RESOLUTION.y)
-      visible = false;
+      setVisible(false);
   }
 
   @Override

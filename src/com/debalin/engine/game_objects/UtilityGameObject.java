@@ -4,7 +4,6 @@ import processing.core.PVector;
 
 public abstract class UtilityGameObject extends GameObject {
 
-  protected transient PVector color;
   protected transient PVector position;
   protected transient PVector size;
 

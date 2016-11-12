@@ -28,10 +28,6 @@ public class Player extends MovingRectangle {
     ON_GROUND, ON_STAIR, ON_AIR
   }
 
-  public boolean isVisible() {
-    return visible;
-  }
-
   public Player(MainEngine engine, SpawnPoint spawnPoint, Queue<GameObject> fallingStairs, List<GameObject> standingStairs, PVector color) {
     super(Constants.PLAYER_COLOR, spawnPoint.getPosition(), Constants.PLAYER_SIZE, Constants.PLAYER_INIT_VEL, Constants.PLAYER_MAX_ACC, engine);
     this.color = color;
@@ -39,7 +35,7 @@ public class Player extends MovingRectangle {
     this.standingStairs = standingStairs;
     LEFT = RIGHT = JUMP = false;
     state = States.ON_AIR;
-    visible = true;
+    setVisible(true);
 
     this.spawnPoint = spawnPoint;
   }
@@ -80,7 +76,6 @@ public class Player extends MovingRectangle {
         eventParameters.add(getConnectionID());
         Event event = new Event(eventType, eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), engine.controller.getClientConnectionID().intValue(), engine.gameTimelineInMillis.getTime(), true);
         engine.getEventManager().raiseEvent(event, false);
-        System.out.println("Player is dead.");
       }
     }
   }

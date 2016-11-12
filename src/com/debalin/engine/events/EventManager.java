@@ -34,6 +34,26 @@ public class EventManager implements Runnable {
     this.recording = recording;
   }
 
+  public void removePlayer(int connectionID) {
+    synchronized (timelineQueues) {
+      for (Map<Integer, PriorityQueue<OrderedEvent>> eventQueues : timelineQueues.values()) {
+        eventQueues.remove(connectionID);
+      }
+    }
+
+    synchronized (timelineQueuesBackup) {
+      for (Map<Integer, PriorityQueue<OrderedEvent>> eventQueues : timelineQueuesBackup.values()) {
+        eventQueues.remove(connectionID);
+      }
+    }
+
+    synchronized (recordedTimelineQueues) {
+      for (Map<Integer, PriorityQueue<OrderedEvent>> eventQueues : recordedTimelineQueues.values()) {
+        eventQueues.remove(connectionID);
+      }
+    }
+  }
+
   private class OrderedEvent {
     public Event event;
     public float score;
@@ -106,12 +126,16 @@ public class EventManager implements Runnable {
     timelines.put(timelineName, timeline);
 
     Map<Integer, PriorityQueue<OrderedEvent>> eventQueue = new HashMap();
-    timelineQueues.put(timelineName, eventQueue);
+    synchronized (timelineQueues) {
+      timelineQueues.put(timelineName, eventQueue);
+    }
     eventQueue.put(-1, new PriorityQueue<>(new EventComparator()));
     eventQueue.put(MainEngine.controller.getClientConnectionID().intValue(), new PriorityQueue<>(new EventComparator()));
 
     Map<Integer, PriorityQueue<OrderedEvent>> recordedEventQueue = new HashMap();
-    recordedTimelineQueues.put(timelineName, recordedEventQueue);
+    synchronized (recordedTimelineQueues) {
+      recordedTimelineQueues.put(timelineName, recordedEventQueue);
+    }
     recordedEventQueue.put(-1, new PriorityQueue<>(new EventComparator()));
     recordedEventQueue.put(MainEngine.controller.getClientConnectionID().intValue(), new PriorityQueue<>(new EventComparator()));
 
@@ -215,7 +239,7 @@ public class EventManager implements Runnable {
             if (handleEvent == null)
               break;
             if (playingRecording) {
-              if (handleEvent.frame - replayStartFrame <= replayTimelineInFrames.getTime() - 1) {
+              if (handleEvent.frame - replayStartFrame <= replayTimelineInFrames.getTime()) {
                 eventQueues.get(handleEvent.getConnectionID()).poll();
                 MainEngine.controller.getEventHandler().onEvent(handleEvent);
               } else {
@@ -264,8 +288,10 @@ public class EventManager implements Runnable {
   public void finishPlayingRecordedEvents() {
     playingRecording = false;
     timelineQueues.clear();
-    for (String timelineName : recordedTimelineQueues.keySet()) {
-      recordedTimelineQueues.get(timelineName).clear();
+    synchronized (recordedTimelineQueues) {
+      for (String timelineName : recordedTimelineQueues.keySet()) {
+        recordedTimelineQueues.get(timelineName).clear();
+      }
     }
     for (String timelineName : timelineQueuesBackup.keySet()) {
       timelineQueues.put(timelineName, timelineQueuesBackup.get(timelineName));
@@ -275,14 +301,18 @@ public class EventManager implements Runnable {
 
   public void playRecordedEvents(float frameTicSize) {
     playingRecording = true;
-    timelineQueuesBackup.clear();
-    System.out.println("Backing up event queue.");
-    for (String timelineName : timelineQueues.keySet()) {
-      timelineQueuesBackup.put(timelineName, timelineQueues.get(timelineName));
+    synchronized (timelineQueuesBackup) {
+      timelineQueuesBackup.clear();
+      System.out.println("Backing up event queue.");
+      for (String timelineName : timelineQueues.keySet()) {
+        timelineQueuesBackup.put(timelineName, timelineQueues.get(timelineName));
+      }
     }
-    timelineQueues.clear();
-    for (String timelineName : recordedTimelineQueues.keySet()) {
-      timelineQueues.put(timelineName, recordedTimelineQueues.get(timelineName));
+    synchronized (timelineQueues) {
+      timelineQueues.clear();
+      for (String timelineName : recordedTimelineQueues.keySet()) {
+        timelineQueues.put(timelineName, recordedTimelineQueues.get(timelineName));
+      }
     }
     replayTimelineInFrames = new Timeline(engine.gameTimelineInFrames, frameTicSize, Timeline.TimelineIterationTypes.LOOP, engine);
     engine.registerGameObject(replayTimelineInFrames, -1, true);

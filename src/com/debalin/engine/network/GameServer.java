@@ -54,19 +54,26 @@ public class GameServer implements Runnable {
     }
 
     while (true) {
-      Event event = null;
+      Event event;
       try {
         event = (Event) in.readObject();
+        engine.getEventManager().broadcastEvent(event, connectionID);
       } catch (IOException e) {
         if (e.getMessage().equals(EngineConstants.READ_ERROR_MESSAGE)) {
           System.out.println("IO Exception. Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
+          List<Object> eventParameters = new ArrayList<>();
+          eventParameters.add(connectionID);
+          event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.PLAYER_DISCONNECT.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), connectionID, engine.gameTimelineInMillis.getTime(), true);
+          synchronized (engine.getEventManager().fromServerWriteQueues) {
+            engine.getEventManager().fromServerWriteQueues.remove(connectionID);
+          }
+          engine.getEventManager().broadcastEvent(event, connectionID);
           return;
         }
       } catch (Exception e) {
         System.out.println("Connection lost with client " + serverConnection.getRemoteSocketAddress() + ", will stop server read thread.");
         return;
       }
-      engine.getEventManager().broadcastEvent(event, connectionID);
     }
   }
 

@@ -83,6 +83,8 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
       for (int i = 0; i <= gameObjectsCluster.size() - 1; i++) {
         Queue<GameObject> gameObjects = gameObjectsCluster.get(i);
         GameObject gameObject = gameObjects.peek();
+        if (gameObject == null)
+          continue;
         String type = gameObject.getClass().getTypeName();
         if (type.equals(Player.class.getTypeName()) && gameObject.getConnectionID() == getClientConnectionID().intValue()) {
           playerObjectID = i;

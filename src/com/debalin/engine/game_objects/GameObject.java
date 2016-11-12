@@ -10,7 +10,7 @@ public abstract class GameObject implements Serializable {
   protected PVector color;
   protected PVector position;
   protected PVector size;
-  protected boolean visible;
+  private boolean visible;
 
   private int connectionID;
   transient public MainEngine engine;
@@ -38,4 +38,7 @@ public abstract class GameObject implements Serializable {
     return visible;
   }
 
+  public void setVisible(boolean visible) {
+    this.visible = visible;
+  }
 }

@@ -14,8 +14,4 @@ public abstract class DynamicGameObject extends GameObject {
     return acceleration;
   }
 
-  public void setVelocity(PVector velocity) {
-    this.velocity = velocity;
-  }
-
 }

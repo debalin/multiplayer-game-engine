@@ -49,7 +49,19 @@ public class GameEventHandler implements EventHandler {
       case "RECORD_PLAY":
         playRecording(event);
         break;
+      case "PLAYER_DISCONNECT":
+        handlePlayerDisconnect(event);
+        break;
     }
+  }
+
+  private void handlePlayerDisconnect(Event event) {
+    List<Object> eventParameters = event.getEventParameters();
+    int connectionID = (Integer) eventParameters.get(0);
+
+    simpleRaceManager.otherPlayers.get(connectionID).setVisible(false);
+    simpleRaceManager.otherPlayers.remove(connectionID);
+    simpleRaceManager.engine.getEventManager().removePlayer(connectionID);
   }
 
   private void startRecording() {

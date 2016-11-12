@@ -2,10 +2,8 @@ package com.debalin.engine.timeline;
 
 import com.debalin.engine.MainEngine;
 import com.debalin.engine.game_objects.DynamicGameObject;
-import processing.core.PApplet;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class Timeline extends DynamicGameObject implements Serializable {
 
@@ -19,7 +17,7 @@ public class Timeline extends DynamicGameObject implements Serializable {
   }
 
   public Timeline(Timeline anchorTimeline, float ticSize, TimelineIterationTypes timelineIterationType, MainEngine engine) {
-    visible = true;
+    setVisible(true);
     if (anchorTimeline == null)
       this.anchor = 0;
     else

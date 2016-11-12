@@ -10,7 +10,7 @@ public class StandingStair extends NonMovingRectangle {
 
   public StandingStair(MainEngine engine, PVector stairColor, PVector stairInitPosition, long stairID) {
     super(stairColor, stairInitPosition, Constants.STANDING_STAIR_SIZE, engine);
-    visible = true;
+    setVisible(true);
     this.stairID = stairID;
   }
 
