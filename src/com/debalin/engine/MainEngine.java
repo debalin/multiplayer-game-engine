@@ -8,6 +8,7 @@ import com.debalin.engine.network.GameServer;
 import com.debalin.engine.timeline.Timeline;
 import com.debalin.engine.util.EngineConstants;
 import com.debalin.engine.util.TextRenderer;
+import com.debalin.util.Constants;
 import processing.core.*;
 
 import java.io.*;
@@ -170,9 +171,19 @@ public class MainEngine extends PApplet {
     updatePositions();
 
     if (!serverMode) {
+      checkAndSendNullEvent();
       drawText();
       drawShapes();
       eventManager.handleEvents();
+    }
+  }
+
+  public void checkAndSendNullEvent() {
+    synchronized (eventManager.fromClientWriteQueue) {
+      if (eventManager.fromClientWriteQueue.size() <= 0) {
+        eventManager.raiseEvent(new Event(Constants.EVENT_TYPES.NULL.toString(), null, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false), true);
+        eventManager.fromClientWriteQueue.notify();
+      }
     }
   }
 
@@ -195,7 +206,20 @@ public class MainEngine extends PApplet {
       targetAlpha += signToggle;
     } else if (eventManager.playingRecording) {
       pushMatrix();
+      textFont(recFont);
       noStroke();
+      fill(255, 0, 0);
+      switch (replaySpeed) {
+        case NORMAL:
+          text("N", clientResolution.x - 122, 92);
+          break;
+        case SLOW:
+          text("L", clientResolution.x - 122, 92);
+          break;
+        case FAST:
+          text("F", clientResolution.x - 122, 92);
+          break;
+      }
       fill(255, 0, 0, targetAlpha);
       triangle(clientResolution.x - 80, 82, clientResolution.x - 100, 72, clientResolution.x - 100, 92);
       popMatrix();
@@ -211,9 +235,11 @@ public class MainEngine extends PApplet {
     textFont(instructionsFont);
     noStroke();
     fill(255, 255, 255);
-    text("R: RECORD", clientResolution.x - 140, clientResolution.y - 90);
-    text("H: HALT", clientResolution.x - 140, clientResolution.y - 70);
-    text("N: NORMAL PLAY", clientResolution.x - 140, clientResolution.y - 50);
+    text("R: RECORD", clientResolution.x - 170, clientResolution.y - 130);
+    text("H: HALT", clientResolution.x - 170, clientResolution.y - 110);
+    text("N: NORMAL PLAY", clientResolution.x - 170, clientResolution.y - 90);
+    text("L: SLOW PLAY", clientResolution.x - 170, clientResolution.y - 70);
+    text("F: FAST PLAY", clientResolution.x - 170, clientResolution.y - 50);
     popMatrix();
 
     for (TextRenderer textRenderer : textRenderers) {
@@ -297,35 +323,55 @@ public class MainEngine extends PApplet {
   public void keyReleased() {
     if (serverMode)
       return;
+
+    Event event;
+    List<Object> eventParameters;
     switch (key) {
       case 'R':
       case 'r':
         System.out.println("Starting recording.");
-        takeSnapshot();
-        eventManager.setRecording(true);
+        event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_START.toString(), null, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
         break;
       case 'H':
       case 'h':
         System.out.println("Stopping recording.");
-        eventManager.setRecording(false);
+        event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_STOP.toString(), null, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
         break;
       case 'N':
       case 'n':
-        System.out.println("Playing recording in normal speed.");
-        replaySpeed = ReplaySpeed.NORMAL;
-        playRecordedGameObjects(1f);
+        eventParameters = new ArrayList<>();
+        eventParameters.add(ReplaySpeed.NORMAL.toString());
+        event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_PLAY.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
+        break;
+      case 'L':
+      case 'l':
+        System.out.println("Playing recording in low speed.");
+        eventParameters = new ArrayList<>();
+        eventParameters.add(ReplaySpeed.SLOW.toString());
+        event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_PLAY.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
+        break;
+      case 'F':
+      case 'f':
+        System.out.println("Playing recording in fast speed.");
+        eventParameters = new ArrayList<>();
+        eventParameters.add(ReplaySpeed.FAST.toString());
+        event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_PLAY.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        eventManager.raiseEvent(event, true);
         break;
       default:
-        List<Object> eventParameters = new ArrayList<>();
+        eventParameters = new ArrayList<>();
         eventParameters.add(new Integer(key));
         eventParameters.add(new Boolean(false));
-
-        Event event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
+        event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.USER_INPUT.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
         eventManager.raiseEvent(event, true);
     }
   }
 
-  private void playRecordedGameObjects(float frameTicSize) {
+  public void playRecordedGameObjects(float frameTicSize) {
     try {
       ObjectInputStream objectInputStream = new ObjectInputStream(new ByteArrayInputStream(snapshot.toByteArray()));
       gameObjectsClusterSnapshot = (List<Queue<GameObject>>) objectInputStream.readObject();

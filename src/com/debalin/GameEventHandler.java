@@ -4,6 +4,7 @@ import com.debalin.characters.FallingStair;
 import com.debalin.characters.Player;
 import com.debalin.characters.SpawnPoint;
 import com.debalin.characters.StandingStair;
+import com.debalin.engine.MainEngine;
 import com.debalin.engine.events.Event;
 import com.debalin.engine.events.EventHandler;
 import com.debalin.engine.game_objects.GameObject;
@@ -36,6 +37,46 @@ public class GameEventHandler implements EventHandler {
         break;
       case "PLAYER_SPAWN":
         handlePlayerSpawn(event);
+        break;
+      case "NULL":
+        break;
+      case "RECORD_START":
+        startRecording();
+        break;
+      case "RECORD_STOP":
+        stopRecording();
+        break;
+      case "RECORD_PLAY":
+        playRecording(event);
+        break;
+    }
+  }
+
+  private void startRecording() {
+    simpleRaceManager.engine.takeSnapshot();
+    simpleRaceManager.engine.getEventManager().setRecording(true);
+  }
+
+  private void stopRecording() {
+    simpleRaceManager.engine.getEventManager().setRecording(false);
+  }
+
+  private void playRecording(Event event) {
+    List<Object> eventParameters = event.getEventParameters();
+    String replaySpeed = (String) eventParameters.get(0);
+
+    switch (replaySpeed) {
+      case "NORMAL":
+        simpleRaceManager.engine.replaySpeed = MainEngine.ReplaySpeed.NORMAL;
+        simpleRaceManager.engine.playRecordedGameObjects(1f);
+        break;
+      case "SLOW":
+        simpleRaceManager.engine.replaySpeed = MainEngine.ReplaySpeed.SLOW;
+        simpleRaceManager.engine.playRecordedGameObjects(2f);
+        break;
+      case "FAST":
+        simpleRaceManager.engine.replaySpeed = MainEngine.ReplaySpeed.FAST;
+        simpleRaceManager.engine.playRecordedGameObjects(0.5f);
         break;
     }
   }

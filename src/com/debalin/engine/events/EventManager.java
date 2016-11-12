@@ -1,6 +1,8 @@
 package com.debalin.engine.events;
 
+import com.debalin.SimpleRaceManager;
 import com.debalin.engine.MainEngine;
+import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.timeline.Timeline;
 import com.debalin.engine.util.EngineConstants;
 
@@ -11,12 +13,12 @@ public class EventManager implements Runnable {
   Map<String, EventPriorities> eventTypePriorities;
   Map<String, Timeline> timelines;
   MainEngine engine;
-  Map<String, PriorityQueue<OrderedEvent>> eventQueues;
-  Map<String, PriorityQueue<OrderedEvent>> eventQueuesBackup;
-  Map<String, PriorityQueue<OrderedEvent>> recordedEventQueues;
+  Map<String, Map<Integer, PriorityQueue<OrderedEvent>>> timelineQueues;
+  Map<String, Map<Integer, PriorityQueue<OrderedEvent>>> timelineQueuesBackup;
+  Map<String, Map<Integer, PriorityQueue<OrderedEvent>>> recordedTimelineQueues;
 
-  Map<Integer, Queue<Event>> fromServerWriteQueues;
-  Queue<Event> fromClientWriteQueue;
+  public Map<Integer, Queue<Event>> fromServerWriteQueues;
+  public Queue<Event> fromClientWriteQueue;
   Queue<Event> startupEvents;
 
   public Timeline replayTimelineInFrames;
@@ -83,9 +85,9 @@ public class EventManager implements Runnable {
     startupEvents = new LinkedList<>();
     eventTypePriorities = new HashMap<>();
     timelines = new HashMap<>();
-    eventQueues = new HashMap<>();
-    eventQueuesBackup = new HashMap<>();
-    recordedEventQueues = new HashMap<>();
+    timelineQueues = new HashMap<>();
+    timelineQueuesBackup = new HashMap<>();
+    recordedTimelineQueues = new HashMap<>();
     this.engine = engine;
     getDefaultEventTypes();
   }
@@ -102,8 +104,21 @@ public class EventManager implements Runnable {
 
   public void registerTimeline(Timeline timeline, String timelineName) {
     timelines.put(timelineName, timeline);
-    eventQueues.put(timelineName, new PriorityQueue<>(new EventComparator()));
-    recordedEventQueues.put(timelineName, new PriorityQueue<>(new EventComparator()));
+
+    Map<Integer, PriorityQueue<OrderedEvent>> eventQueue = new HashMap();
+    timelineQueues.put(timelineName, eventQueue);
+    eventQueue.put(-1, new PriorityQueue<>(new EventComparator()));
+    eventQueue.put(MainEngine.controller.getClientConnectionID().intValue(), new PriorityQueue<>(new EventComparator()));
+
+    Map<Integer, PriorityQueue<OrderedEvent>> recordedEventQueue = new HashMap();
+    recordedTimelineQueues.put(timelineName, recordedEventQueue);
+    recordedEventQueue.put(-1, new PriorityQueue<>(new EventComparator()));
+    recordedEventQueue.put(MainEngine.controller.getClientConnectionID().intValue(), new PriorityQueue<>(new EventComparator()));
+
+    for (GameObject player : ((SimpleRaceManager) MainEngine.controller).otherPlayers.values()) {
+      eventQueue.put(player.getConnectionID(), new PriorityQueue<>(new EventComparator()));
+      recordedEventQueue.put(player.getConnectionID(), new PriorityQueue<>(new EventComparator()));
+    }
   }
 
   public void raiseEvent(Event event, boolean toBroadcast) {
@@ -124,22 +139,19 @@ public class EventManager implements Runnable {
     EventPriorities eventDefaultPriority = eventTypePriorities.get(eventType);
 
     if (eventDefaultPriority == null) {
-      System.out.println("Event type does not exist, will default to low.");
       eventDefaultPriority = EventPriorities.LOW;
     }
 
-    synchronized (eventQueues) {
-      switch (eventDefaultPriority) {
-        case HIGH:
-          eventQueues.get(event.getTimelineName()).add(new OrderedEvent(event, event.getTime() - 100));
-          break;
-        case MED:
-          eventQueues.get(event.getTimelineName()).add(new OrderedEvent(event, event.getTime() - 50));
-          break;
-        case LOW:
-          eventQueues.get(event.getTimelineName()).add(new OrderedEvent(event, event.getTime()));
-          break;
-      }
+    switch (eventDefaultPriority) {
+      case HIGH:
+        putInEventQueues(event, event.getTime() - 100, timelineQueues);
+        break;
+      case MED:
+        putInEventQueues(event, event.getTime() - 50, timelineQueues);
+        break;
+      case LOW:
+        putInEventQueues(event, event.getTime(), timelineQueues);
+        break;
     }
 
     if (toBroadcast) {
@@ -150,76 +162,137 @@ public class EventManager implements Runnable {
     }
   }
 
+  public void putInEventQueues(Event event, float score, Map<String, Map<Integer, PriorityQueue<OrderedEvent>>> queues) {
+    synchronized (queues) {
+      if (queues.get(event.getTimelineName()).containsKey(event.getConnectionID()))
+        queues.get(event.getTimelineName()).get(event.getConnectionID()).add(new OrderedEvent(event, score));
+      else {
+        queues.get(event.getTimelineName()).put(event.getConnectionID(), new PriorityQueue<>(new EventComparator()));
+        queues.get(event.getTimelineName()).get(event.getConnectionID()).add(new OrderedEvent(event, score));
+      }
+    }
+  }
+
+  public Event whichEvent(Map<Integer, PriorityQueue<OrderedEvent>> eventQueues) {
+    Event event = null;
+    float bestScore = -1;
+
+    Iterator it = eventQueues.entrySet().iterator();
+
+    while (it.hasNext()) {
+      Map.Entry<Integer, PriorityQueue<OrderedEvent>> pair = (Map.Entry) it.next();
+      int connectionID = pair.getKey();
+      PriorityQueue<OrderedEvent> eventQueue = pair.getValue();
+
+      OrderedEvent orderedEvent = eventQueue.peek();
+      if (connectionID != -1 && eventQueue.size() == 0) {
+        event = null;
+        break;
+      }
+      if (bestScore == -1 && orderedEvent != null) {
+        event = orderedEvent.event;
+        bestScore = orderedEvent.score;
+        continue;
+      } else if (orderedEvent != null && orderedEvent.score < bestScore) {
+        event = orderedEvent.event;
+        bestScore = orderedEvent.score;
+      }
+    }
+    return event;
+  }
+
   public void handleEvents() {
     try {
       Iterator it;
-      synchronized (eventQueues) {
-        it = eventQueues.entrySet().iterator();
+      synchronized (timelineQueues) {
+        it = timelineQueues.entrySet().iterator();
         while (it.hasNext()) {
-          Map.Entry<String, PriorityQueue<OrderedEvent>> pair = (Map.Entry) it.next();
-          String timelineName = pair.getKey();
-          Queue<OrderedEvent> timelineQueue = pair.getValue();
-          while (!timelineQueue.isEmpty()) {
+          Map.Entry<String, Map<Integer, PriorityQueue<OrderedEvent>>> pair = (Map.Entry) it.next();
+          Map<Integer, PriorityQueue<OrderedEvent>> eventQueues = pair.getValue();
+          Event handleEvent;
+          while (true) {
+            handleEvent = whichEvent(eventQueues);
+            if (handleEvent == null)
+              break;
             if (playingRecording) {
-              OrderedEvent orderedEvent = timelineQueue.peek();
-//              System.out.println("Frame difference: " + (orderedEvent.event.frame - replayStartFrame) + ", current replay time: " + replayTimelineInFrames.getTime() + ".");
-              if (orderedEvent.event.frame - replayStartFrame <= replayTimelineInFrames.getTime() - 1) {
-                orderedEvent = timelineQueue.poll();
-                MainEngine.controller.getEventHandler().onEvent(orderedEvent.event);
-//                System.out.println("Handling recorded event " + orderedEvent.event.getEventType() + ".");
+              if (handleEvent.frame - replayStartFrame <= replayTimelineInFrames.getTime() - 1) {
+                eventQueues.get(handleEvent.getConnectionID()).poll();
+                MainEngine.controller.getEventHandler().onEvent(handleEvent);
               } else {
                 break;
               }
-              if (timelineQueue.isEmpty()) {
+              if (isEventQueuesEmpty(eventQueues)) {
                 finishPlayingRecordedEvents();
                 break;
               }
             } else {
-              OrderedEvent orderedEvent = timelineQueue.poll();
+              OrderedEvent orderedEvent = eventQueues.get(handleEvent.getConnectionID()).poll();
               if (recording) {
-                recordEvent(orderedEvent, timelineName);
+                recordEvent(orderedEvent);
               }
               MainEngine.controller.getEventHandler().onEvent(orderedEvent.event);
+              if (orderedEvent.event.getEventType().equals(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_PLAY.toString())) {
+                break;
+              }
             }
           }
         }
       }
     } catch (Exception ex) {
+      ex.printStackTrace();
     }
+  }
+
+  public boolean isEventQueuesEmpty(Map<Integer, PriorityQueue<OrderedEvent>> eventQueues) {
+    int totalSize = 0;
+    int nullSize = 0;
+
+    for (PriorityQueue<OrderedEvent> eventQueue : eventQueues.values()) {
+      totalSize += eventQueue.size();
+      for (OrderedEvent orderedEvent : eventQueue) {
+        if (orderedEvent.event.getEventType().equals("NULL"))
+          nullSize++;
+      }
+    }
+
+    if (totalSize == nullSize && totalSize < 5)
+      return true;
+    else
+      return false;
   }
 
   public void finishPlayingRecordedEvents() {
     playingRecording = false;
-    eventQueues.clear();
-    for (String timelineName : recordedEventQueues.keySet()) {
-      recordedEventQueues.get(timelineName).clear();
+    timelineQueues.clear();
+    for (String timelineName : recordedTimelineQueues.keySet()) {
+      recordedTimelineQueues.get(timelineName).clear();
     }
-    for (String timelineName : eventQueuesBackup.keySet()) {
-      eventQueues.put(timelineName, eventQueuesBackup.get(timelineName));
+    for (String timelineName : timelineQueuesBackup.keySet()) {
+      timelineQueues.put(timelineName, timelineQueuesBackup.get(timelineName));
     }
     engine.stopPlayingRecordedGameObjects();
   }
 
   public void playRecordedEvents(float frameTicSize) {
-    synchronized (eventQueues) {
-      playingRecording = true;
-      eventQueuesBackup.clear();
-      System.out.println("Backing up event queue.");
-      for (String timelineName : eventQueues.keySet()) {
-        eventQueuesBackup.put(timelineName, eventQueues.get(timelineName));
-      }
-      eventQueues.clear();
-      for (String timelineName : recordedEventQueues.keySet()) {
-        eventQueues.put(timelineName, recordedEventQueues.get(timelineName));
-      }
-      replayTimelineInFrames = new Timeline(engine.gameTimelineInFrames, frameTicSize, Timeline.TimelineIterationTypes.LOOP, engine);
-      engine.registerGameObject(replayTimelineInFrames, -1, true);
+    playingRecording = true;
+    timelineQueuesBackup.clear();
+    System.out.println("Backing up event queue.");
+    for (String timelineName : timelineQueues.keySet()) {
+      timelineQueuesBackup.put(timelineName, timelineQueues.get(timelineName));
     }
+    timelineQueues.clear();
+    for (String timelineName : recordedTimelineQueues.keySet()) {
+      timelineQueues.put(timelineName, recordedTimelineQueues.get(timelineName));
+    }
+    replayTimelineInFrames = new Timeline(engine.gameTimelineInFrames, frameTicSize, Timeline.TimelineIterationTypes.LOOP, engine);
+    engine.registerGameObject(replayTimelineInFrames, -1, true);
   }
 
-  private void recordEvent(OrderedEvent orderedEvent, String timelineName) {
+  private void recordEvent(OrderedEvent orderedEvent) {
+    if (orderedEvent.event.getEventType().equals("RECORD_START") || orderedEvent.event.getEventType().equals("RECORD_STOP") || orderedEvent.event.getEventType().equals("RECORD_PLAY"))
+      return;
     orderedEvent.event.frame = engine.gameTimelineInFrames.getTime();
-    recordedEventQueues.get(timelineName).add(orderedEvent);
+    putInEventQueues(orderedEvent.event, orderedEvent.score, recordedTimelineQueues);
   }
 
   public void run() {
