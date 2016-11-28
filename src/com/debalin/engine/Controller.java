@@ -4,6 +4,7 @@ import com.debalin.engine.events.EventHandler;
 import com.debalin.engine.game_objects.GameObject;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,5 +41,10 @@ public abstract class Controller {
   }
 
   public abstract void mirrorGameObjects(List<Queue<GameObject>> gameObjectsCluster);
+
+  public abstract Map<String, GameObject> bindObjects();
+
+  public abstract String getScriptPath();
+  public abstract String getScriptFunctionName();
 
 }

@@ -5,6 +5,7 @@ import com.debalin.engine.events.EventManager;
 import com.debalin.engine.game_objects.GameObject;
 import com.debalin.engine.network.GameClient;
 import com.debalin.engine.network.GameServer;
+import com.debalin.engine.scripting.ScriptManager;
 import com.debalin.engine.timeline.Timeline;
 import com.debalin.engine.util.EngineConstants;
 import com.debalin.engine.util.TextRenderer;
@@ -43,6 +44,10 @@ public class MainEngine extends PApplet {
 
   public float targetAlpha = 0, signToggle;
   PFont recFont, instructionsFont;
+
+  public String scriptPath;
+  public String scriptFunctionName;
+  public boolean runScript = false;
 
   public MainEngine() {
     gameObjectsCluster = new ArrayList<>();
@@ -123,17 +128,40 @@ public class MainEngine extends PApplet {
 
   public void setup() {
     frameRate(40);
+
     if (!MainEngine.serverMode) {
       recFont = createFont("Verdana", 25);
       instructionsFont = createFont("Verdana", 16);
     }
+
     controller.setEngine(this);
     controller.registerServerOrClient();
+
     if (MainEngine.serverMode)
       realTimelineInMillis = new Timeline(null, 1000000, Timeline.TimelineIterationTypes.REAL, this);
+
     startServers();
     startTimelines();
     controller.setup();
+
+    if (!MainEngine.serverMode)
+      setupScripting();
+  }
+
+  public void setupScripting() {
+    bindScriptObjects();
+
+    scriptPath = controller.getScriptPath();
+    scriptFunctionName = controller.getScriptFunctionName();
+  }
+
+  public void bindScriptObjects() {
+    Map<String, GameObject> scriptObjects = controller.bindObjects();
+    Iterator it = scriptObjects.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<String, GameObject> pair = (Map.Entry) it.next();
+      ScriptManager.bindArgument(pair.getKey(), pair.getValue());
+    }
   }
 
   private void startTimelines() {
@@ -175,6 +203,16 @@ public class MainEngine extends PApplet {
       drawText();
       drawShapes();
       eventManager.handleEvents();
+      raiseScriptEvents();
+    }
+  }
+
+  public void raiseScriptEvents() {
+    if (runScript) {
+      List<Object> eventParemeters = new LinkedList<>();
+      eventParemeters.add(scriptFunctionName);
+      Event event = new Event(Constants.EVENT_TYPES.SCRIPT.toString(), eventParemeters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), true);
+      eventManager.raiseEvent(event, true);
     }
   }
 
@@ -234,6 +272,7 @@ public class MainEngine extends PApplet {
     textFont(instructionsFont);
     noStroke();
     fill(255, 255, 255);
+    text("T: TOGGLE SCRIPT", clientResolution.x - 170, clientResolution.y - 150);
     text("R: RECORD", clientResolution.x - 170, clientResolution.y - 130);
     text("H: HALT", clientResolution.x - 170, clientResolution.y - 110);
     text("N: NORMAL PLAY", clientResolution.x - 170, clientResolution.y - 90);
@@ -360,6 +399,17 @@ public class MainEngine extends PApplet {
         eventParameters.add(ReplaySpeed.FAST.toString());
         event = new Event(EngineConstants.DEFAULT_EVENT_TYPES.RECORD_PLAY.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), false);
         eventManager.raiseEvent(event, true);
+        break;
+      case 'T':
+      case 't':
+        if (runScript) {
+          System.out.println("Script stopped.");
+          runScript = false;
+        }
+        else {
+          System.out.println("Script started.");
+          runScript = true;
+        }
         break;
       default:
         eventParameters = new ArrayList<>();

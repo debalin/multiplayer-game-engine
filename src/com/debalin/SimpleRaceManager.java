@@ -16,6 +16,8 @@ import com.debalin.engine.util.TextRenderer;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +76,30 @@ public class SimpleRaceManager extends Controller implements TextRenderer {
     }
 
     simpleRaceManager.startEngine();
+  }
+
+  @Override
+  public Map<String, GameObject> bindObjects() {
+    Map<String, GameObject> gameObjects = new HashMap<>();
+
+    if (standingStairs.size() == Constants.STANDING_STAIR_COUNT) {
+      gameObjects.put("standingStair1", standingStairs.get(0));
+      gameObjects.put("standingStair2", standingStairs.get(1));
+      gameObjects.put("standingStair3", standingStairs.get(2));
+    }
+
+    return gameObjects;
+  }
+
+  @Override
+  public String getScriptPath() {
+    String scriptPath = System.getProperty("user.dir") + "/scripts/script.js";
+    return scriptPath;
+  }
+
+  @Override
+  public String getScriptFunctionName() {
+    return "stairMover";
   }
 
   @Override

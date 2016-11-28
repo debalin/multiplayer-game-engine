@@ -17,4 +17,20 @@ public class StandingStair extends NonMovingRectangle {
   public long getStairID() {
     return stairID;
   }
+
+  public void moveUp(float y) {
+    this.position.add(0, -y);
+  }
+
+  public void moveDown(float y) {
+    this.position.add(0, y);
+  }
+
+  public void moveLeft(float x) {
+    this.position.add(-x, 0);
+  }
+
+  public void moveRight(float x) {
+    this.position.add(x, 0);
+  }
 }

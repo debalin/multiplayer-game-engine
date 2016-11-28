@@ -8,9 +8,12 @@ import com.debalin.engine.MainEngine;
 import com.debalin.engine.events.Event;
 import com.debalin.engine.events.EventHandler;
 import com.debalin.engine.game_objects.GameObject;
+import com.debalin.engine.scripting.ScriptManager;
+import com.debalin.engine.util.EngineConstants;
 import com.debalin.util.Constants;
 import processing.core.PVector;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class GameEventHandler implements EventHandler {
@@ -52,6 +55,33 @@ public class GameEventHandler implements EventHandler {
       case "PLAYER_DISCONNECT":
         handlePlayerDisconnect(event);
         break;
+      case "SCRIPT":
+        handleScripts(event);
+        break;
+    }
+  }
+
+  private void handleScripts(Event event) {
+    List<Object> eventParameters = event.getEventParameters();
+    String scriptFunctionName = (String) eventParameters.get(0);
+
+    if (scriptFunctionName.equals(simpleRaceManager.engine.scriptFunctionName)) {
+      simpleRaceManager.engine.bindScriptObjects();
+      ScriptManager.loadScript(simpleRaceManager.engine.scriptPath);
+      ScriptManager.executeScript(simpleRaceManager.engine.scriptFunctionName);
+    }
+    else if (scriptFunctionName.equals("handlePlayer")) {
+      int key = (Integer) eventParameters.get(1);
+      boolean set = (Boolean) eventParameters.get(2);
+      Player player;
+
+      if (event.getConnectionID() == simpleRaceManager.getClientConnectionID().intValue())
+        player = simpleRaceManager.player;
+      else
+        player = (Player) simpleRaceManager.otherPlayers.get(event.getConnectionID());
+
+      ScriptManager.bindArgument("player", player);
+      ScriptManager.executeScript("handlePlayer", key, set);
     }
   }
 
@@ -197,13 +227,25 @@ public class GameEventHandler implements EventHandler {
 
   private void handleUserInput(Event event) {
     List<Object> eventParameters = event.getEventParameters();
+    int key = (Integer) eventParameters.get(0);
+    boolean set = (Boolean) eventParameters.get(1);
     Player player;
+
     if (event.getConnectionID() == simpleRaceManager.getClientConnectionID().intValue())
       player = simpleRaceManager.player;
     else
       player = (Player) simpleRaceManager.otherPlayers.get(event.getConnectionID());
 
-    player.handleKeypress((Integer) eventParameters.get(0), (Boolean) eventParameters.get(1));
+    if (simpleRaceManager.engine.runScript) {
+      List<Object> cascadeEventParameters = new LinkedList<>();
+      cascadeEventParameters.add("handlePlayer");
+      cascadeEventParameters.addAll(eventParameters);
+      Event cascadeEvent = new Event(Constants.EVENT_TYPES.SCRIPT.toString(), cascadeEventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), simpleRaceManager.getClientConnectionID().intValue(), simpleRaceManager.engine.gameTimelineInMillis.getTime(), true);
+      simpleRaceManager.engine.getEventManager().raiseEvent(cascadeEvent, true);
+    }
+    else {
+      player.handleKeypress(key, set);
+    }
   }
 
 }
