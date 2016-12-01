@@ -13,4 +13,7 @@ public class EngineConstants {
     REAL_MILLIS, GAME_MILLIS, GAME_LOOPS
   }
 
+  public static final boolean REPLAY_ON = true;
+  public static final boolean SCRIPT_ON = true;
+
 }
