@@ -1,6 +1,6 @@
 ## A multiplayer game engine
 
-This project was a part of the Game Engine Foundations course (by [Dr. David L. Roberts](https://www.csc.ncsu.edu/faculty/robertsd/)) and was built component-by-component over the whole semester of Fall, 2016 at NC State. It involves making a multiiplayer game engine using the Processing library in Java and having features such as a monolithic game object hierarchy, a networked client-server architecture, event management system, timelines, replays and scripting. I will give instructions on how to run the program and a brief of every milestone in this readme. Please refer to the individual HW reports in the [docs](docs/) folder for detailed descriptions of what I had accomplished. 
+This project was a part of the Game Engine Foundations course (by [Dr. David L. Roberts](https://www.csc.ncsu.edu/faculty/robertsd/)) and was built component-by-component over the whole semester of Fall, 2016 at NC State. It involves making a multiplayer game engine using the Processing library in Java and having features such as a monolithic game object hierarchy, a networked client-server architecture, event management system, timelines, replays and scripting. I will give instructions on how to run the program and a brief of every milestone in this readme. Please refer to the individual HW reports in the [docs](docs/) folder for detailed descriptions of what I had accomplished. 
 
 ### Instructions
 
@@ -28,7 +28,7 @@ In this assignment, I had an introduction to the basic concepts of a game engine
 
 ### Game Object Model (HW2)
 
-I built the implementation of this assignment on my last homework assignment code. On a side note, I had already implemented quite a lot of this assignment in the first homework and hence devoted my time to fine tune and optimize my code to remove lags and improve efficiency. Specifically, I extended my Game Object Model from the first assignment a little bit, added death zones and spawn points and impelemented a string network protocol to compare with my existing method of transmitting serialized game objects over the network. The game object model used is of monolithic type, i.e. there is one `GameObject` class at the top of the tree and then multiple classes inherit from it depending on the requirements. This is in contrast to having a component model or a property-centric model. The detailed report for this milestone can be found [here](docs/HW2_Report.pdf).
+I built the implementation of this assignment on my last homework assignment code. On a side note, I had already implemented quite a lot of this assignment in the first homework and hence devoted my time to fine tune and optimize my code to remove lags and improve efficiency. Specifically, I extended my Game Object Model from the first assignment a little bit, added death zones and spawn points and implemented a string network protocol to compare with my existing method of transmitting serialized game objects over the network. The game object model used is of monolithic type, i.e. there is one `GameObject` class at the top of the tree and then multiple classes inherit from it depending on the requirements. This is in contrast to having a component model or a property-centric model. The detailed report for this milestone can be found [here](docs/HW2_Report.pdf).
 
 ### Events (HW3)
 
