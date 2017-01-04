@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -o errexit -o nounset
-
 rev=$(git rev-parse --short HEAD)
 
 git config user.name "Debalin Das"
