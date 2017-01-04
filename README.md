@@ -1,4 +1,6 @@
-## A multiplayer game engine
+## A multiplayer game engine 
+
+[![Build Status](https://travis-ci.org/debalin/multiplayer-game-engine.svg?branch=master)](https://travis-ci.org/debalin/multiplayer-game-engine)
 
 This project was a part of the Game Engine Foundations course (by [Dr. David L. Roberts](https://www.csc.ncsu.edu/faculty/robertsd/)) and was built component-by-component over the whole semester of Fall, 2016 at NC State. It involves making a multiplayer game engine using the Processing library in Java and having features such as a monolithic game object hierarchy, a networked client-server architecture, event management system, timelines, replays and scripting. I will give instructions on how to run the program and a brief of every milestone in this readme. Please refer to the individual HW reports in the [docs](docs/) folder for detailed descriptions of what I had accomplished. 
 
@@ -7,8 +9,7 @@ This project was a part of the Game Engine Foundations course (by [Dr. David L. 
 I had built a playground over the semester to test my engine as I built it. Running according to my instructions, will execute that playground, which internally is using my engine. Later, I also built two small games using my engine. I will talk more about this later in the readme. There are two ways to run my multiplayer game / engine demo with scripting enabled. Remember to clone (`git clone`) my project on to your system first. 
 
 1. **JAR**:
-    1. Find the JAR file for this project in
-    `out\artifacts\multiplayer_game_engine_jar\multiplayer-game-engine.jar`.
+    1. Find the JAR file for this project [here](https://github.com/debalin/multiplayer-game-engine/tree/release). Download the ZIP and uncompress to find the JAR and the scripts folder (needs to be in this path for the executable to access them) inside it. 
     2. Open a command line and type `java -jar multiplayer-game-engine.jar s` (for server).
     3. For running clients, open other command lines, type and execute `java -jar multiplayer-game-engine.jar c` as many times you want for any number of clients.
     4. Remember that you need the run the server first and then the clients, otherwise this might throw some exception.
