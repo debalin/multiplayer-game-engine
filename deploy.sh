@@ -7,10 +7,9 @@
 rev=$(git rev-parse --short HEAD)
 
 cp -r scripts out/artifacts/multiplayer_game_engine_jar/
-cd out/artifacts/multiplayer_game_engine_jar
-zip multiplayer_game_engine.zip scripts multiplayer_game_engine.jar
-rm -rf scripts
-rm -rf multiplayer_game_engine.jar
+cd out/artifacts/
+zip -r multiplayer_game_engine.zip multiplayer_game_engine_jar
+rm -rf multiplayer_game_engine_jar
 
 git init
 git config user.name "Debalin Das"
