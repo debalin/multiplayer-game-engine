@@ -2,6 +2,7 @@
 
 rev=$(git rev-parse --short HEAD)
 
+cp -r scripts out/artifacts/multiplayer_game_engine_jar/
 cd out/artifacts
 
 git init
