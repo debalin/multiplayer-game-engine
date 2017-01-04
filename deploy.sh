@@ -2,11 +2,18 @@
 
 rev=$(git rev-parse --short HEAD)
 
+cd out/artifacts
+
+git init
 git config user.name "Debalin Das"
 git config user.email "debalin90@gmail.com"
 
 git remote add upstream "https://$GH_TOKEN@github.com/debalin/multiplayer-game-engine.git"
+git fetch upstream
+git reset upstream/release
 
-git add out/artifacts/multiplayer_game_engine_jar/multiplayer-game-engine.jar
+touch .
+
+git add -A .
 git commit -m "JAR created for ${rev}. [skip ci]"
-git push upstream HEAD:master
+git push upstream HEAD:release
