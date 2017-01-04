@@ -9,4 +9,4 @@ git remote add upstream "https://$GH_TOKEN@github.com/debalin/multiplayer-game-e
 
 git add out/artifacts/multiplayer_game_engine_jar/multiplayer-game-engine.jar
 git commit -m "JAR created for ${rev}."
-git push -q upstream HEAD
+git push -q upstream master
