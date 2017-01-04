@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# This script simply takes the JAR produced as a result
+# of the Travis build and pushes it to the release branch.
+# Taken from http://www.steveklabnik.com/automatically_update_github_pages_with_travis_example/.
+
 rev=$(git rev-parse --short HEAD)
 
 cp -r scripts out/artifacts/multiplayer_game_engine_jar/
