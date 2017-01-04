@@ -8,5 +8,5 @@ git config user.email "debalin90@gmail.com"
 git remote add upstream "https://$GH_TOKEN@github.com/debalin/multiplayer-game-engine.git"
 
 git add out/artifacts/multiplayer_game_engine_jar/multiplayer-game-engine.jar
-git commit -m "JAR created for ${rev}."
-git push -q upstream HEAD:master
+git commit -m "JAR created for ${rev}. [skip ci]"
+git push upstream HEAD:master
