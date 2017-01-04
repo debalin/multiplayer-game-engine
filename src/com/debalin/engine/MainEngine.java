@@ -209,9 +209,9 @@ public class MainEngine extends PApplet {
 
   public void raiseScriptEvents() {
     if (runScript) {
-      List<Object> eventParemeters = new LinkedList<>();
-      eventParemeters.add(scriptFunctionName);
-      Event event = new Event(Constants.EVENT_TYPES.SCRIPT.toString(), eventParemeters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), true);
+      List<Object> eventParameters = new LinkedList<>();
+      eventParameters.add(scriptFunctionName);
+      Event event = new Event(Constants.EVENT_TYPES.SCRIPT.toString(), eventParameters, EngineConstants.DEFAULT_TIMELINES.GAME_MILLIS.toString(), controller.getClientConnectionID().intValue(), gameTimelineInMillis.getTime(), true);
       eventManager.raiseEvent(event, true);
     }
   }
